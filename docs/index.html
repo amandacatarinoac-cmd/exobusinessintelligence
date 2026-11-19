@@ -75,12 +75,14 @@ footer{padding:24px 16px 32px}
     <label>Secteur (division CPV)<select id="f-sect"><option value="">Tous</option></select></label>
     <button id="reset" type="button">Réinitialiser</button>
   </div>
-  <p class="status" id="perim" style="margin-top:6px"></p>
+  <p class="hint" style="margin:6px 0 0">Chaque filtre sert une user story : Pays (US 4, 12) · Année (US 1 : instruire sur les années récentes) · Type de contrat (US 8 : lire la liste d'audit par contrat) · Secteur (US 1).</p>
+  <p class="status" id="perim" style="margin-top:2px"></p>
 
   <!-- ===== Vue 1 ===== -->
   <section id="v1" class="view">
     <h2>Vue 1 · Où en sommes-nous ?</h2>
-    <p class="status">Version de travail : les six indicateurs définitifs arrivent dans la prochaine version.</p>
+    <div class="decision">Pour le décideur politique, en deux minutes : six indicateurs, deux par axe (l'état, puis le levier ou le ciblage), chacun avec son effectif. Décision : choisir l'axe à porter à l'arbitrage.</div>
+    <p class="status" id="v1-perim"></p>
     <div class="grid" id="kpis" style="margin-top:10px"></div>
   </section>
 
@@ -187,7 +189,7 @@ const PROC = { OPE: "Ouverte", RES: "Restreinte", NIC: "Négociée avec mise en 
 const NO_COMPET = new Set(["NOC", "AWP"]);
 
 // ---------- données ----------
-let P, R, DIV;
+let P, R, M, DIV;
 const S = { tab: "v1", axe: "A", aCross: "PS", aSeuil: 0.40, aCap: 20, aSort: ["rank", "jeu"], bCross: "P", cCross: "PS", cCap: 500, x: null, xSort: "z", xPage: 0, prev: [] };
 
 function median(arr) {
@@ -223,28 +225,73 @@ function segKey(cross, i) { return cross.split("").map(d => keyOf[d](i)).join("|
 function segLabel(cross, i) { return cross.split("").map(d => lab[d](i)).join(" × "); }
 function segFilter(cross, i) { const o = {}; cross.split("").forEach(d => o[d] = keyOf[d](i)); return o; }
 
-// ---------- Vue 1 (couche de mesures) ----------
-function card(axe, titre, valeur, effectif, regle, ok) {
-  return `<div class="card"><div class="axe">${axe}</div><div class="t">${titre}</div><div class="big${ok ? "" : " low"}">${ok ? valeur : "effectif insuffisant"}</div><div class="n">${effectif}</div><div class="rule">${regle}</div></div>`;
+// ---------- Vue 1 · six KPI ----------
+function card(o) {
+  const badge = !o.ok ? "" : o.alert ? `<span class="tag act">${o.alert}</span>` : o.calm ? `<span class="tag info">${o.calm}</span>` : "";
+  return `<div class="card"><div class="axe">${o.axe} · ${o.type}</div><div class="t">${o.titre}</div>
+    <div class="big${o.ok ? "" : " low"}">${o.ok ? o.valeur : (o.lowText || "effectif insuffisant")}</div>
+    <div class="n">${o.effectif}</div><div style="margin-top:6px">${badge}</div>
+    <div class="rule">${o.regle}</div>${o.link ? `<div style="margin-top:6px"><button class="link" type="button" data-go="${o.link[0]}" data-axe="${o.link[1] || ""}">${o.link[2]}</button></div>` : ""}</div>`;
+}
+function kpi4Card(f) {
+  const K = M.kpi4, base = { axe: "Axe B · PME", type: "indicateur avancé (levier)", titre: "4 · Écart ajusté du 6-10 lots sur la part de PME", link: ["v2", "", "Pourquoi ? relation R3 →"],
+    regle: `Estimé une fois par pays (2016-2017, PME renseignée, 6-10 lots contre non allotis ; logistique contrôlée par montant, contrat, année). Publié seulement si ≥ ${K.seuil_par_groupe} marchés dans chaque groupe. Association ajustée, hétérogène : pas un effet causal.` };
+  const ptsTxt = e => `${e.ecart_pts > 0 ? "+" : ""}${fmtNum(e.ecart_pts, 1)} pts`;
+  const ci = e => `[${fmtNum(e.ecart_lo, 1)} ; ${fmtNum(e.ecart_hi, 1)}]`;
+  if (f.contrat || f.sect) return card(Object.assign(base, { ok: false, lowText: "non estimé pour ce sous-ensemble", effectif: "Le modèle n'a pas été estimé par contrat ni par secteur : afficher un chiffre ici serait une précision fausse." }));
+  if (f.pays) {
+    const e = K.pays[f.pays] || { n_6_10: 0, n_non_alloti: 0 };
+    const eff = `${fmtInt(e.n_6_10)} marchés à 6-10 lots · ${fmtInt(e.n_non_alloti)} non allotis`;
+    if (e.or === undefined) return card(Object.assign(base, { ok: false, lowText: "non estimable", effectif: eff + ` (seuil : ${K.seuil_par_groupe} dans chaque groupe)` }));
+    const est = e.ecart_lo > 0 || e.ecart_hi < 0;
+    return card(Object.assign(base, { ok: true, valeur: ptsTxt(e) + `<div class="n">IC 95 % ${ci(e)}</div>`, effectif: eff + ` · rapport de cotes ${fmtNum(e.or, 2)} [${fmtNum(e.or_lo, 2)} ; ${fmtNum(e.or_hi, 2)}]`,
+      alert: null, calm: est ? "association établie (IC hors 0)" : "non établi : l'intervalle contient 0" }));
+  }
+  const rows = Object.entries(K.pays).filter(([, e]) => e.or !== undefined).sort((a, b) => b[1].ecart_pts - a[1].ecart_pts);
+  const x = v => Math.max(0, Math.min(100, (v + 30) / 50 * 100));
+  const forest = rows.concat([["moy", K.ensemble_effet_moyen]]).map(([k, e]) => {
+    const est = e.ecart_lo > 0 || e.ecart_hi < 0;
+    return `<div style="display:grid;grid-template-columns:96px 1fr;gap:6px;align-items:center;font-size:12px;margin-top:4px"><span>${k === "moy" ? "Effet moyen*" : esc(PAYS[k] || k)}</span>
+      <span title="${ptsTxt(e)} ${ci(e)}" style="position:relative;height:16px;display:block"><i style="position:absolute;left:${x(0)}%;top:0;bottom:0;width:1px;background:var(--muted)"></i>
+      <i style="position:absolute;top:7px;height:2px;left:${x(e.ecart_lo)}%;width:${x(e.ecart_hi) - x(e.ecart_lo)}%;background:var(--accent)"></i>
+      <i style="position:absolute;top:3px;width:10px;height:10px;margin-left:-5px;border-radius:50%;left:${x(e.ecart_pts)}%;${est ? "background:var(--accent)" : "background:var(--card);border:2px solid var(--accent);box-sizing:border-box"}"></i></span></div>`;
+  }).join("");
+  const fr = K.pays.FR;
+  return card(Object.assign(base, { ok: true, valeur: `France ${ptsTxt(fr)}<div class="n">IC 95 % ${ci(fr)}</div>`,
+    effectif: `${rows.length} pays estimables sur ${Object.keys(K.pays).length}. Point plein : intervalle hors 0 ; point creux : non établi. Échelle de −30 à +20 points.${forest}<div class="hint">* tous pays, effet pays contrôlé : ${ptsTxt(K.ensemble_effet_moyen)} ${ci(K.ensemble_effet_moyen)}, ${fmtInt(K.ensemble_effet_moyen.n_6_10)} et ${fmtInt(K.ensemble_effet_moyen.n_non_alloti)} marchés.</div>`,
+    calm: "seul pays où l'association est établie : la France" }));
 }
 function renderV1(f) {
   const c = P.cols, ope = codeOf(P, "proc", "OPE"), yes = codeOf(P, "pme", "Y");
-  let n1 = 0, d1 = 0, offs = [], vals = [], sumW = 0;
-  for (const i of select(P, f, false, DIV)) {
+  let n1 = 0, d1 = 0, offs = [], vals = [], sumW = 0, nz = 0, z3 = 0, wz3 = 0;
+  const rows = select(P, f, false, DIV);
+  for (const i of rows) {
     const o = c.offers[i];
     if (c.proc[i] === ope && o !== null && o >= 1) { d1++; if (o === 1) n1++; offs.push(o); }
     const v = c.value[i]; if (v !== null) { vals.push(v); sumW += v * c.poids[i]; }
+    if (c.z[i] !== null) { nz++; if (c.z[i] > 3) { z3++; wz3 += v * c.poids[i]; } }
   }
   let n3 = 0, d3 = 0, w3 = 0;
   for (const i of select(P, f, true, DIV)) { const y = c.year[i]; if (y !== 2016 && y !== 2017) continue; w3++; if (c.pme[i] >= 0) { d3++; if (c.pme[i] === yes) n3++; } }
-  const med = median(offs), medV = median(vals);
+  // Queue : part du montant pondéré portée par le 1 % des plus gros montants du périmètre.
+  const sorted = Float64Array.from(vals).sort(); const p99 = sorted.length ? sorted[Math.floor(0.99 * (sorted.length - 1))] : Infinity;
+  let wTop = 0; for (const i of rows) { const v = c.value[i]; if (v !== null && v > p99) wTop += v * c.poids[i]; }
+  const med = median(offs), t1 = d1 ? n1 / d1 : 0, t3 = d3 ? n3 / d3 : 0;
+  $("v1-perim").innerHTML = `Périmètre : fichier principal (${fmtInt(rows.length)} attributions). KPI 1 et 2 : procédure ouverte. <b>KPI 3 et 4 : fenêtre 2016-2017 verrouillée</b> (la variable PME n'existe pas avant 2016)${f.annee ? ", le filtre Année ne s'y applique pas" : ""}. Les procédures rares sont lues à part (onglet Mesures).`;
   $("kpis").innerHTML = [
-    card("Axe A · Concurrence", "1 · Taux d'offre unique, procédure ouverte", d1 ? fmtPct(n1 / d1) : "", `${fmtInt(n1)} / ${fmtInt(d1)} marchés avec au moins une offre`, "Seuil : 100 marchés. Sentinelles 940 et 999 exclues. Procédure ouverte seule.", d1 >= 100),
-    card("Axe A · Concurrence", "2 · Médiane du nombre d'offres, procédure ouverte", med === null ? "" : fmtNum(med, Number.isInteger(med) ? 0 : 1), `N = ${fmtInt(d1)} marchés`, "Agrégat non additif, recalculé sur les lignes. Seuil : 100 marchés.", d1 >= 100),
-    card("Axe B · PME", "3 · Part de PME parmi les renseignés", d3 ? fmtPct(n3 / d3) : "", `${fmtInt(n3)} / ${fmtInt(d3)} renseignés · renseignement ${w3 ? fmtPct(d3 / w3) : "—"} (${fmtInt(d3)} / ${fmtInt(w3)})`, "Fenêtre 2016-2017 verrouillée" + (f.annee ? " : filtre Année ignoré ici." : ".") + " Seuil : 100 renseignés.", d3 >= 100),
-    card("Axe C · Budget", "5 · Montant total pondéré", fmtNum(sumW / 1e9, 1) + " Md€", `N = ${fmtInt(vals.length)} attributions · Σ montant × POIDS`, "Agrégat additif. Seuil : 30 attributions.", vals.length >= 30),
-    card("Axe C · Budget", "Médiane des montants par attribution", medV === null ? "" : fmtInt(Math.round(medV)) + " €", `N = ${fmtInt(vals.length)} attributions`, "Valeur de contrôle du guide, non pondérée. Seuil : 30.", vals.length >= 30)
+    card({ axe: "Axe A · Concurrence", type: "indicateur de résultat", titre: "1 · Taux d'offre unique, procédure ouverte", ok: d1 >= 100, valeur: fmtPct(t1), effectif: `${fmtInt(n1)} / ${fmtInt(d1)} marchés avec au moins une offre`,
+      alert: d1 >= 100 && t1 > 0.40 ? "au-dessus de 40 %" : null, calm: d1 >= 100 && t1 <= 0.40 ? "sous le seuil de 40 %" : null, regle: "Seuil d'affichage : 100 marchés. Sentinelles 940 et 999 exclues. NOC exclue par précaution (code non confirmé).", link: ["v3", "A", "Où agir ? segments par montant en jeu →"] }),
+    card({ axe: "Axe A · Concurrence", type: "agrégat non additif", titre: "2 · Médiane du nombre d'offres, procédure ouverte", ok: d1 >= 100, valeur: med === null ? "" : fmtNum(med, Number.isInteger(med) ? 0 : 1) + " offres", effectif: `N = ${fmtInt(d1)} marchés`,
+      alert: d1 >= 100 && med <= 2 ? "médiane ≤ 2 : surveillance" : null, calm: d1 >= 100 && med > 2 ? "au-dessus de 2 offres" : null, regle: "Associée à l'offre unique, sans la précéder : indicateur de surveillance, pas avancé. Recalculée sur les lignes.", link: ["v3", "A", "Liste de surveillance →"] }),
+    card({ axe: "Axe B · PME", type: "indicateur de résultat", titre: "3 · Part de PME parmi les attributions renseignées", ok: d3 >= 100, valeur: fmtPct(t3), effectif: `${fmtInt(n3)} / ${fmtInt(d3)} renseignés · renseignement ${w3 ? fmtPct(d3 / w3, 0) : "—"} (${fmtInt(d3)} / ${fmtInt(w3)})`,
+      alert: d3 >= 100 && t3 < 0.40 ? "sous 40 % : revue d'allotissement" : null, calm: d3 >= 100 && t3 >= 0.40 ? "au-dessus de 40 %" : null, regle: "Fenêtre 2016-2017. Seuil : 100 renseignés. Un renseignement faible fragilise la part.", link: ["v3", "B", "Où agir ? pays sous 40 % →"] }),
+    kpi4Card(f),
+    card({ axe: "Axe C · Budget", type: "agrégat additif", titre: "5 · Montant total pondéré", ok: vals.length >= 30, valeur: fmtNum(sumW / 1e9, 1) + " Md€", effectif: `N = ${fmtInt(vals.length)} attributions · Σ montant × POIDS · médiane ${vals.length ? fmtEur(median(vals)) : "—"} par attribution`,
+      alert: sumW && wTop / sumW > 0.5 ? `${fmtPct(wTop / sumW, 0)} porté par 1 % des montants` : null, calm: sumW && wTop / sumW <= 0.5 ? `${fmtPct(wTop / sumW, 0)} porté par 1 % des montants` : null, regle: "Seuil : 30 attributions. L'échantillon reproduit mal la queue (poids ≈ 15) : vérifier le dernier centile avant tout audit.", link: ["v3", "C", "Qui pèse ? test du dernier centile →"] }),
+    card({ axe: "Axe C · Budget", type: "indicateur de ciblage", titre: "6 · Part du montant portée par les attributions atypiques (z > 3)", ok: nz >= 30, valeur: sumW ? fmtPct(wz3 / sumW) : "—", effectif: `${fmtInt(z3)} attributions atypiques sur ${fmtInt(nz)} scorées · ${fmtEur(wz3)} / ${fmtEur(sumW)}`,
+      calm: "atypique ne veut pas dire irrégulier", regle: "Indice : écart du montant à celui prédit par secteur × contrat, pays, année, lots, procédure. Seuil : 30 attributions.", link: ["v3", "C", "Où concentrer l'audit ? →"] })
   ].join("");
+  $("kpis").querySelectorAll("button[data-go]").forEach(b => b.onclick = () => { if (b.dataset.axe) S.axe = b.dataset.axe; S.prev.push(S.tab); go(b.dataset.go); });
 }
 
 // ---------- tri multiple ----------
@@ -469,8 +516,8 @@ function render() {
 
 async function init() {
   try {
-    const [p, r] = await Promise.all(["data/principal.json", "data/rares.json"].map(u => fetch(u).then(x => { if (!x.ok) throw new Error(u + " " + x.status); return x.json(); })));
-    P = p; R = r;
+    const [p, r, m] = await Promise.all(["data/principal.json", "data/rares.json", "data/modeles.json"].map(u => fetch(u).then(x => { if (!x.ok) throw new Error(u + " " + x.status); return x.json(); })));
+    P = p; R = r; M = m;
     DIV = Int16Array.from(P.cols.cpv, v => v ? +v.slice(0, 2) : -1);
     P.dicts.pays.forEach(code => $("f-pays").insertAdjacentHTML("beforeend", `<option value="${code}">${esc(PAYS[code] || code)}</option>`));
     for (let y = 2009; y <= 2017; y++) $("f-annee").insertAdjacentHTML("beforeend", `<option>${y}</option>`);

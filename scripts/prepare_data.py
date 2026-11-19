@@ -105,6 +105,53 @@ def anomaly(p):
     return z, comp
 
 
+def kpi4(p, seuil=100):
+    """KPI 4 · écart ajusté du 6-10 lots sur la part de PME (ex « gain simulé »).
+
+    Retour du rendu 4, priorité 1 : estimé PAR PAYS, avec son intervalle,
+    publié seulement là où il est estimable (au moins `seuil` marchés dans
+    chaque groupe). Population : 2016-2017, PME renseignée, 6-10 lots
+    contre non allotis. Modèle logistique PME ~ 6-10 lots + log10(montant)
+    + contrat + année. Écart ajusté = effet marginal moyen du passage à
+    6-10 lots, en points de part de PME (IC 95 %, méthode delta).
+    Lecture : association ajustée, hétérogène ; pas un effet causal.
+    """
+    w = pd.DataFrame({
+        "y": p["B_CONTRACTOR_SME"].eq("Y").astype(int), "pme": p["B_CONTRACTOR_SME"],
+        "lots": p["LOTS_NUMBER"], "lv": p["AWARD_VALUE_LOG10"], "year": p["YEAR"].astype(str),
+        "contrat": p["TYPE_OF_CONTRACT"].astype(str), "pays": p["ISO_COUNTRY_CODE"].astype(str),
+    })
+    w = w[p["YEAR"].isin([2016, 2017]) & w["pme"].notna() & w["lots"].notna() & w["lv"].notna()]
+    w = w[w["lots"].eq(0) | w["lots"].between(6, 10)].copy()
+    w["g"] = (w["lots"] > 0).astype(int)
+
+    def fit(df, formula):
+        m = smf.logit(formula, data=df).fit(disp=0)
+        me = m.get_margeff(at="overall", dummy=True).summary_frame().loc["g"]
+        ci = m.conf_int().loc["g"]
+        return {
+            "or": round(float(np.exp(m.params["g"])), 2),
+            "or_lo": round(float(np.exp(ci[0])), 2), "or_hi": round(float(np.exp(ci[1])), 2),
+            "ecart_pts": round(float(me["dy/dx"]) * 100, 1),
+            "ecart_lo": round(float(me["Conf. Int. Low"]) * 100, 1),
+            "ecart_hi": round(float(me["Cont. Int. Hi."]) * 100, 1),
+        }
+
+    out = {"seuil_par_groupe": seuil, "pays": {}}
+    for pays, df in w.groupby("pays"):
+        n1, n0 = int(df["g"].sum()), int((df["g"] == 0).sum())
+        e = {"n_6_10": n1, "n_non_alloti": n0,
+             "pme_6_10": int(df.loc[df["g"] == 1, "y"].sum()), "pme_non_alloti": int(df.loc[df["g"] == 0, "y"].sum())}
+        if n1 >= seuil and n0 >= seuil:
+            e.update(fit(df, "y ~ g + lv + C(contrat) + C(year)"))
+        out["pays"][pays] = e
+    tot = {"n_6_10": int(w["g"].sum()), "n_non_alloti": int((w["g"] == 0).sum()),
+           "pme_6_10": int(w.loc[w["g"] == 1, "y"].sum()), "pme_non_alloti": int(w.loc[w["g"] == 0, "y"].sum())}
+    tot.update(fit(w, "y ~ g + lv + C(contrat) + C(year) + C(pays)"))
+    out["ensemble_effet_moyen"] = tot
+    return out
+
+
 def build(df, cats_cols, journal):
     cols, dicts = {}, {}
     cols["id"] = num(df["ID_AW"])
@@ -146,6 +193,10 @@ def main(p_path, r_path, out_dir):
     z, comp = anomaly(p)
     p["Z"] = z
     journal_p["indice_anomalie"] = comp
+    k4 = kpi4(p)
+    with open(f"{out_dir}/modeles.json", "w", encoding="utf-8") as fh:
+        json.dump({"kpi4": k4}, fh, ensure_ascii=False, separators=(",", ":"))
+    print("kpi4", {k: v for k, v in k4["pays"].items() if "or" in v}, k4["ensemble_effet_moyen"])
     r = pd.read_excel(r_path, sheet_name=0)
     journal_r = {"lignes_brutes": 6024, "doublons_stricts_s3": 2, "lignes_final": len(r),
                  "lignes_application": len(r)}

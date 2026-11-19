@@ -44,6 +44,16 @@ def kpis(rows, pays=None, annee=None, contrat=None):
     v = [r for r in fa if r["value"] is not None]
     out["kpi5_md_eur"] = (sum(r["value"] * r["poids"] for r in v) / 1e9, len(v))
     out["mediane_montant"] = (statistics.median([r["value"] for r in v]) if v else None, len(v))
+    # KPI 5 (queue) : part du montant pondéré portée par le 1 % des plus gros montants
+    vs = sorted(r["value"] for r in v)
+    p99 = vs[int(0.99 * (len(vs) - 1))] if vs else None
+    tot = sum(r["value"] * r["poids"] for r in v)
+    top = sum(r["value"] * r["poids"] for r in v if r["value"] > p99)
+    out["kpi5_part_top1pct"] = round(top / tot, 3) if tot else None
+    # KPI 6 : part du montant pondéré portée par les attributions à z > 3
+    zz = [r for r in fa if r["z"] is not None]
+    z3 = [r for r in zz if r["z"] > 3]
+    out["kpi6"] = (len(z3), len(zz), round(sum(r["value"] * r["poids"] for r in z3) / tot, 3) if tot else None)
     return out
 
 
