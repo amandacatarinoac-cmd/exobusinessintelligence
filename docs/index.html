@@ -5,185 +5,485 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Observatoire des marchés publics</title>
 <style>
-:root{--bg:#F8FAFE;--card:#FFFFFF;--ink:#14213D;--muted:#4A5466;--line:#DDE1E7;--accent:#1F4FD1;--warn:#B34700;--grey:#8A93A3}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1522;--card:#182033;--ink:#E8ECF4;--muted:#A9B2C3;--line:#2B3550;--accent:#7A9BFF;--warn:#FF9A5C;--grey:#7D879A}}
-:root[data-theme="dark"]{--bg:#0F1522;--card:#182033;--ink:#E8ECF4;--muted:#A9B2C3;--line:#2B3550;--accent:#7A9BFF;--warn:#FF9A5C;--grey:#7D879A}
+:root{--bg:#F8FAFE;--card:#FFFFFF;--ink:#14213D;--muted:#4A5466;--line:#DDE1E7;--accent:#1F4FD1;--accent-soft:#E6ECFC;--warn:#B34700;--warn-soft:#FFE8D6;--grey:#8A93A3;--ok:#1E7A4C}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1522;--card:#182033;--ink:#E8ECF4;--muted:#A9B2C3;--line:#2B3550;--accent:#7A9BFF;--accent-soft:#22305A;--warn:#FF9A5C;--warn-soft:#4A2A14;--grey:#7D879A;--ok:#5CC98E}}
+:root[data-theme="dark"]{--bg:#0F1522;--card:#182033;--ink:#E8ECF4;--muted:#A9B2C3;--line:#2B3550;--accent:#7A9BFF;--accent-soft:#22305A;--warn:#FF9A5C;--warn-soft:#4A2A14;--grey:#7D879A;--ok:#5CC98E}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header,main,footer{max-width:1100px;margin:0 auto;padding:16px}
-h1{font-size:22px;margin:8px 0 2px}h2{font-size:17px;margin:28px 0 8px}
-.sub{color:var(--muted);margin:0}
+header,main,footer{max-width:1180px;margin:0 auto;padding:0 16px}
+header{padding-top:16px}
+h1{font-size:22px;margin:4px 0 2px}h2{font-size:18px;margin:26px 0 4px}h3{font-size:15px;margin:18px 0 6px}
+.sub,.status{color:var(--muted);margin:0;font-size:13px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin:12px 0 0}
+nav.tabs button{background:none;border:none;border-bottom:3px solid transparent;border-radius:0;padding:10px 14px;display:flex;flex-direction:column;align-items:flex-start;min-height:52px;white-space:nowrap}
+nav.tabs button small{color:var(--muted);font-size:12px}
+nav.tabs button[aria-selected="true"]{border-bottom-color:var(--accent);font-weight:600}
 .filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
 .filters label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
-select,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px}
+select,button,input{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px}
+select{max-width:260px}
 button{cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+button.link{border:none;background:none;color:var(--accent);padding:0;min-height:0;text-decoration:underline;font-size:13px}
+.chips{display:inline-flex;gap:4px;flex-wrap:wrap}
+.chip{border-radius:999px;padding:4px 12px;min-height:32px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
-.card .axe{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.axe{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
 .card .t{font-weight:600;margin:2px 0 6px}
-.big{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
-.big.low{color:var(--grey);font-size:18px}
+.big{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.big.low{color:var(--grey);font-size:17px}
 .n{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .rule{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);margin-top:8px;padding-top:6px}
-table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-variant-numeric:tabular-nums}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}
-th{font-size:12px;color:var(--muted);font-weight:600}
-.status{font-size:13px;color:var(--muted)}
-.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;background:var(--line);color:var(--ink)}
-.scroll{overflow-x:auto}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:10px}
+.decision{border-left:4px solid var(--accent);background:var(--accent-soft);padding:8px 12px;border-radius:6px;font-size:14px;margin:8px 0}
+.controls{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:8px 0}
+.controls .lbl{font-size:12px;color:var(--muted);margin-right:6px}
+.kpis{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+.kpi{flex:1 1 180px;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.kpi b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12px;color:var(--muted)}
+.scroll{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+th.sort{cursor:pointer;user-select:none}th.sort:hover{color:var(--ink)}
+td.num,th.num{text-align:right}
+tr.low td{color:var(--grey)}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--accent-soft)}
+.bar{position:relative;height:8px;background:var(--line);border-radius:4px;min-width:80px;margin-top:4px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent)}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;background:var(--line);color:var(--ink);white-space:nowrap}
+.tag.act{background:var(--warn);color:#fff}.tag.watch{background:var(--warn-soft);color:var(--ink)}.tag.info{background:var(--accent-soft);color:var(--ink)}
+.hint{font-size:12px;color:var(--muted)}
+.hidden{display:none}
+footer{padding:24px 16px 32px}
 </style>
 </head>
 <body>
 <header>
   <h1>Observatoire européen des marchés publics</h1>
-  <p class="sub">Application décisionnelle · version de travail v0 : couche de mesures recalculée à partir des lignes. Les quatre vues arrivent dans les versions suivantes.</p>
+  <p class="sub">Préparer l'exercice de surveillance 2018 : décider où agir. Chaque indicateur est recalculé à partir des lignes à chaque filtre, avec son effectif.</p>
   <p class="status" id="status">Chargement des données…</p>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
 </header>
 <main>
-  <div class="filters" aria-label="Filtres">
+  <div class="filters" aria-label="Filtres de contexte">
     <label>Pays<select id="f-pays"><option value="">Tous</option></select></label>
     <label>Année<select id="f-annee"><option value="">2009-2017</option></select></label>
     <label>Type de contrat<select id="f-contrat"><option value="">Tous</option><option value="W">Travaux</option><option value="U">Fournitures</option><option value="S">Services</option></select></label>
+    <label>Secteur (division CPV)<select id="f-sect"><option value="">Tous</option></select></label>
     <button id="reset" type="button">Réinitialiser</button>
   </div>
-  <p class="status" id="perim"></p>
+  <p class="status" id="perim" style="margin-top:6px"></p>
 
-  <h2>Fichier principal · indicateurs recalculés</h2>
-  <div class="grid" id="kpis"></div>
+  <!-- ===== Vue 1 ===== -->
+  <section id="v1" class="view">
+    <h2>Vue 1 · Où en sommes-nous ?</h2>
+    <p class="status">Version de travail : les six indicateurs définitifs arrivent dans la prochaine version.</p>
+    <div class="grid" id="kpis" style="margin-top:10px"></div>
+  </section>
 
-  <h2>Procédures rares · fichier séparé, jamais additionné au principal</h2>
-  <p class="status">Lu procédure par procédure (erreur sanctionnée n° 11 : empiler les deux fichiers). Mêmes filtres pays, année, contrat.</p>
-  <div class="scroll"><table><thead><tr><th>Procédure</th><th>Attributions</th><th>Offre unique</th><th>Numérateur / dénominateur</th><th>Médiane des offres</th></tr></thead><tbody id="rares"></tbody></table></div>
+  <!-- ===== Vue 2 ===== -->
+  <section id="v2" class="view hidden">
+    <h2>Vue 2 · Pourquoi ?</h2>
+    <div class="panel">Vue en construction : une relation par axe, stratifiée par un confondant, avec les effectifs des deux groupes.</div>
+  </section>
 
-  <h2>Traçabilité des données</h2>
-  <div class="scroll"><table><tbody id="journal"></tbody></table></div>
+  <!-- ===== Vue 3 ===== -->
+  <section id="v3" class="view hidden">
+    <h2>Vue 3 · Où agir ?</h2>
+    <p class="status">Pour le responsable de la surveillance. Un mode de priorisation par axe, toujours par valeur en jeu, jamais par taux brut. Cliquer sur une ligne descend aux attributions (vue 4).</p>
+    <div class="chips" style="margin-top:10px" id="axe-chips"></div>
+
+    <!-- Axe A -->
+    <div id="ax-A" class="panel">
+      <div class="axe">Axe A · Concurrence</div>
+      <div class="decision">Sur quels segments déclencher une revue pour maximiser la dépense replacée en concurrence effective, avec notre capacité d'instruction ?</div>
+      <div class="controls">
+        <span><span class="lbl">Croisement</span><span class="chips" id="a-cross"></span></span>
+        <span><span class="lbl">Seuil d'alerte (offre unique)</span><span class="chips" id="a-seuil"></span></span>
+        <label><span class="lbl">Capacité d'instruction N</span><input type="range" id="a-cap" min="1" max="60" value="20" style="vertical-align:middle"> <b id="a-cap-v">20</b> dossiers</label>
+      </div>
+      <div class="kpis" id="a-kpis"></div>
+      <p class="hint" id="a-note"></p>
+      <div class="scroll"><table><thead id="a-head"></thead><tbody id="a-body"></tbody></table></div>
+      <p class="hint" id="a-foot"></p>
+    </div>
+
+    <!-- Axe B -->
+    <div id="ax-B" class="panel hidden">
+      <div class="axe">Axe B · Accès des PME</div>
+      <div class="decision">Où recommander une revue d'allotissement : là où l'allotissement est le plus faible et l'enjeu PME le plus fort ?</div>
+      <div class="controls">
+        <span><span class="lbl">Segment</span><span class="chips" id="b-cross"></span></span>
+        <span class="tag info">Fenêtre 2016-2017 verrouillée : la variable PME n'existe pas avant 2016</span>
+      </div>
+      <div class="kpis" id="b-kpis"></div>
+      <div class="scroll"><table><thead id="b-head"></thead><tbody id="b-body"></tbody></table></div>
+      <p class="hint" id="b-foot"></p>
+    </div>
+
+    <!-- Axe C -->
+    <div id="ax-C" class="panel hidden">
+      <div class="axe">Axe C · Efficience budgétaire</div>
+      <div class="decision">Où concentrer l'audit : sur quels segments les montants s'écartent-ils de ce qu'annoncent leurs caractéristiques ?</div>
+      <p class="hint">Indice d'anomalie : écart du montant (log10) à celui prédit par le secteur × contrat, le pays, l'année, la classe de lots et la procédure (résidu de régression, z robuste). Atypique ne veut pas dire irrégulier. Grain : une ligne = une attribution ; un marché alloti compte une attribution par lot.</p>
+      <div class="controls">
+        <span><span class="lbl">Segment</span><span class="chips" id="c-cross"></span></span>
+        <span><span class="lbl">Capacité d'audit N</span><span class="chips" id="c-cap"></span></span>
+      </div>
+      <div class="kpis" id="c-kpis"></div>
+      <h3>Liste d'audit : qui y pèse ? (part des pays)</h3>
+      <div class="scroll"><table><thead id="c2-head"></thead><tbody id="c2-body"></tbody></table></div>
+      <p class="hint" id="c2-foot"></p>
+      <h3>Segments classés par montant atypique</h3>
+      <div class="scroll"><table><thead id="c-head"></thead><tbody id="c-body"></tbody></table></div>
+      <p class="hint" id="c-foot"></p>
+    </div>
+  </section>
+
+  <!-- ===== Vue 4 ===== -->
+  <section id="v4" class="view hidden">
+    <h2>Vue 4 · Quel cas précis ?</h2>
+    <p class="status">Une ligne = une attribution du fichier principal. On vérifie un cas avant d'agir.</p>
+    <div class="panel">
+      <div id="x-sel" class="decision"></div>
+      <div class="controls"><span><span class="lbl">Trier par</span><span class="chips" id="x-sort"></span></span><button class="link" id="x-back" type="button">← Retour à l'écran précédent</button></div>
+      <p class="hint" id="x-stats"></p>
+      <div class="scroll"><table><thead id="x-head"></thead><tbody id="x-body"></tbody></table></div>
+      <div class="controls"><button id="x-prev" type="button">← Précédent</button><span class="hint" id="x-page"></span><button id="x-next" type="button">Suivant →</button></div>
+    </div>
+  </section>
+
+  <!-- ===== Traçabilité ===== -->
+  <section id="v9" class="view hidden">
+    <h2>Mesures et traçabilité</h2>
+    <h3>Procédures rares · fichier séparé, jamais additionné au principal</h3>
+    <p class="status">Lu procédure par procédure (erreur sanctionnée n° 11 : empiler les deux fichiers). Filtres pays, année, contrat appliqués.</p>
+    <div class="panel scroll"><table><thead><tr><th>Procédure</th><th class="num">Attributions</th><th class="num">Offre unique</th><th class="num">Numérateur / dénominateur</th><th class="num">Médiane des offres</th></tr></thead><tbody id="rares"></tbody></table></div>
+    <h3>Des fichiers bruts à l'application</h3>
+    <div class="panel scroll"><table><tbody id="journal"></tbody></table></div>
+  </section>
 </main>
-<footer><p class="status">Projet BI, Dashboards &amp; Data Storytelling · M2 PSB · Ingryd Lo Tierzo Silva et Sara Lhasseni. Données : échantillon des marchés publics européens 2009-2017, fichiers FINAL de la séance 3.</p></footer>
+<footer><p class="status">Projet BI, Dashboards &amp; Data Storytelling · M2 PSB · Ingryd Lo Tierzo Silva et Sara Lhasseni. Données : échantillon des marchés publics européens 2009-2017 (fichiers FINAL de la séance 3). Code et calculs de référence : dépôt GitHub exobusinessintelligence.</p></footer>
 
 <script>
 "use strict";
+// ---------- formats ----------
 const fmtInt = n => n.toLocaleString("fr-FR");
-const fmtPct = x => (x * 100).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " %";
+const fmtPct = (x, d = 1) => (x * 100).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %";
 const fmtNum = (x, d) => x.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtEur = x => x >= 1e9 ? fmtNum(x / 1e9, 2) + " Md€" : x >= 1e6 ? fmtNum(x / 1e6, 1) + " M€" : fmtInt(Math.round(x)) + " €";
 const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-function median(arr) {               // médiane exacte, jamais une moyenne de médianes
+// ---------- libellés (nomenclatures, pas des chiffres) ----------
+const PAYS = { AT: "Autriche", BE: "Belgique", BG: "Bulgarie", CH: "Suisse", CY: "Chypre", CZ: "Tchéquie", DE: "Allemagne", DK: "Danemark", EE: "Estonie", ES: "Espagne", FI: "Finlande", FR: "France", GR: "Grèce", HR: "Croatie", HU: "Hongrie", IE: "Irlande", IS: "Islande", IT: "Italie", LI: "Liechtenstein", LT: "Lituanie", LU: "Luxembourg", LV: "Lettonie", MK: "Macédoine du Nord", MT: "Malte", NL: "Pays-Bas", NO: "Norvège", PL: "Pologne", PT: "Portugal", RO: "Roumanie", SE: "Suède", SI: "Slovénie", SK: "Slovaquie", UK: "Royaume-Uni" };
+const CPV = { "03": "Produits agricoles et de la pêche", "09": "Produits pétroliers, énergie", "14": "Produits miniers, métaux", "15": "Produits alimentaires", "16": "Machines agricoles", "18": "Vêtements, chaussures", "19": "Cuir, textiles, plastiques", "22": "Imprimés", "24": "Produits chimiques", "30": "Matériel de bureau et informatique", "31": "Machines électriques", "32": "Équipements de communication", "33": "Matériel médical et pharmaceutique", "34": "Équipements de transport", "35": "Sécurité et défense", "37": "Musique, sport, jeux", "38": "Laboratoire, optique, précision", "39": "Mobilier, entretien", "41": "Eau collectée et purifiée", "42": "Machines industrielles", "43": "Machines pour mines et BTP", "44": "Matériaux de construction", "45": "Travaux de construction", "48": "Logiciels", "50": "Réparation et entretien", "51": "Installation", "55": "Hôtellerie, restauration", "60": "Transport", "63": "Services annexes aux transports", "64": "Postes et télécommunications", "65": "Services publics (eau, énergie)", "66": "Finance et assurance", "70": "Immobilier", "71": "Architecture, ingénierie", "72": "Services informatiques", "73": "Recherche et développement", "75": "Administration, défense", "76": "Services pétroliers et gaziers", "77": "Agriculture, sylviculture", "79": "Services aux entreprises", "80": "Enseignement, formation", "85": "Santé et action sociale", "90": "Assainissement, environnement", "92": "Loisirs, culture, sport", "98": "Autres services" };
+const CONTRAT = { W: "Travaux", U: "Fournitures", S: "Services" };
+const PROC = { OPE: "Ouverte", RES: "Restreinte", NIC: "Négociée avec mise en concurrence", AWP: "Attribution sans publication préalable", NOC: "NOC (code non confirmé)" };
+// Procédures signalées et exclues du classement de l'axe A (pas de mise en concurrence publiée).
+const NO_COMPET = new Set(["NOC", "AWP"]);
+
+// ---------- données ----------
+let P, R, DIV;
+const S = { tab: "v1", axe: "A", aCross: "PS", aSeuil: 0.40, aCap: 20, aSort: ["rank", "jeu"], bCross: "P", cCross: "PS", cCap: 500, x: null, xSort: "z", xPage: 0, prev: [] };
+
+function median(arr) {
   if (!arr.length) return null;
-  const a = Float64Array.from(arr).sort();
-  const m = a.length >> 1;
+  const a = Float64Array.from(arr).sort(), m = a.length >> 1;
   return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
 }
-function code(d, dim, val) { return val === "" ? null : d.dicts[dim].indexOf(val); }
+const codeOf = (d, dim, v) => v === "" ? null : d.dicts[dim].indexOf(v);
+function filt() { return { pays: $("f-pays").value, annee: $("f-annee").value, contrat: $("f-contrat").value, sect: $("f-sect").value }; }
 
-// Filtre commun : renvoie les indices de lignes retenues.
-function select(d, f, ignoreYear) {
+// Filtre commun sur le fichier principal ; ignoreYear pour la fenêtre PME verrouillée.
+function select(d, f, ignoreYear, div) {
   const c = d.cols, out = [];
-  const p = code(d, "pays", f.pays), k = code(d, "contrat", f.contrat), y = f.annee === "" ? null : +f.annee;
+  const p = codeOf(d, "pays", f.pays), k = codeOf(d, "contrat", f.contrat), y = f.annee === "" ? null : +f.annee;
+  const s = div && f.sect !== "" ? +f.sect : null;
   for (let i = 0; i < d.n; i++) {
     if (p !== null && c.pays[i] !== p) continue;
     if (k !== null && c.contrat[i] !== k) continue;
     if (!ignoreYear && y !== null && c.year[i] !== y) continue;
+    if (s !== null && div[i] !== s) continue;
     out.push(i);
   }
   return out;
 }
+const lab = {
+  P: i => PAYS[P.dicts.pays[P.cols.pays[i]]] || P.dicts.pays[P.cols.pays[i]] || "non renseigné",
+  S: i => DIV[i] < 0 ? "secteur inconnu" : String(DIV[i]).padStart(2, "0") + " · " + (CPV[String(DIV[i]).padStart(2, "0")] || "division CPV"),
+  R: i => { const k = P.dicts.proc[P.cols.proc[i]]; return k ? PROC[k] || k : "procédure non renseignée"; },
+  C: i => CONTRAT[P.dicts.contrat[P.cols.contrat[i]]] || "?"
+};
+const keyOf = { P: i => P.cols.pays[i], S: i => DIV[i], R: i => P.cols.proc[i], C: i => P.cols.contrat[i] };
+function segKey(cross, i) { return cross.split("").map(d => keyOf[d](i)).join("|"); }
+function segLabel(cross, i) { return cross.split("").map(d => lab[d](i)).join(" × "); }
+function segFilter(cross, i) { const o = {}; cross.split("").forEach(d => o[d] = keyOf[d](i)); return o; }
 
-// Chaque indicateur = numérateur et dénominateur séparés, quotient calculé ici, effectif rendu à côté.
-function measures(d, f) {
-  const c = d.cols, ope = code(d, "proc", "OPE"), yes = code(d, "pme", "Y");
-  const rows = select(d, f, false);
+// ---------- Vue 1 (couche de mesures) ----------
+function card(axe, titre, valeur, effectif, regle, ok) {
+  return `<div class="card"><div class="axe">${axe}</div><div class="t">${titre}</div><div class="big${ok ? "" : " low"}">${ok ? valeur : "effectif insuffisant"}</div><div class="n">${effectif}</div><div class="rule">${regle}</div></div>`;
+}
+function renderV1(f) {
+  const c = P.cols, ope = codeOf(P, "proc", "OPE"), yes = codeOf(P, "pme", "Y");
   let n1 = 0, d1 = 0, offs = [], vals = [], sumW = 0;
-  for (const i of rows) {
+  for (const i of select(P, f, false, DIV)) {
     const o = c.offers[i];
     if (c.proc[i] === ope && o !== null && o >= 1) { d1++; if (o === 1) n1++; offs.push(o); }
-    const v = c.value[i];
-    if (v !== null) { vals.push(v); sumW += v * c.poids[i]; }
+    const v = c.value[i]; if (v !== null) { vals.push(v); sumW += v * c.poids[i]; }
   }
-  // KPI 3 : fenêtre 2016-2017 verrouillée, le filtre année ne s'applique pas.
   let n3 = 0, d3 = 0, w3 = 0;
-  for (const i of select(d, f, true)) {
-    const y = c.year[i]; if (y !== 2016 && y !== 2017) continue;
-    w3++; if (c.pme[i] >= 0) { d3++; if (c.pme[i] === yes) n3++; }
-  }
-  return { lignes: rows.length, n1, d1, med: median(offs), nv: vals.length, medV: median(vals), sumW, n3, d3, w3 };
-}
-
-function card(axe, titre, valeur, effectif, regle, ok) {
-  return `<div class="card"><div class="axe">${axe}</div><div class="t">${titre}</div>
-    <div class="big${ok ? "" : " low"}">${ok ? valeur : "effectif insuffisant"}</div>
-    <div class="n">${effectif}</div><div class="rule">${regle}</div></div>`;
-}
-
-let P, R;
-function render() {
-  const t0 = performance.now();
-  const f = { pays: $("f-pays").value, annee: $("f-annee").value, contrat: $("f-contrat").value };
-  const m = measures(P, f);
-  const yearIgnored = f.annee !== "";
+  for (const i of select(P, f, true, DIV)) { const y = c.year[i]; if (y !== 2016 && y !== 2017) continue; w3++; if (c.pme[i] >= 0) { d3++; if (c.pme[i] === yes) n3++; } }
+  const med = median(offs), medV = median(vals);
   $("kpis").innerHTML = [
-    card("Axe A · Concurrence", "1 · Taux d'offre unique, procédure ouverte",
-      m.d1 ? fmtPct(m.n1 / m.d1) : "", `${fmtInt(m.n1)} / ${fmtInt(m.d1)} marchés avec au moins une offre`,
-      "Seuil d'affichage : 100 marchés. Sentinelles 940 et 999 exclues. Hors NOC, NIC, RES, AWP.", m.d1 >= 100),
-    card("Axe A · Concurrence", "2 · Médiane du nombre d'offres, procédure ouverte",
-      m.med === null ? "" : fmtNum(m.med, Number.isInteger(m.med) ? 0 : 1), `N = ${fmtInt(m.d1)} marchés`,
-      "Agrégat non additif : recalculé sur les lignes à chaque filtre. Seuil : 100 marchés.", m.d1 >= 100),
-    card("Axe B · PME", "3 · Part de PME parmi les renseignés",
-      m.d3 ? fmtPct(m.n3 / m.d3) : "", `${fmtInt(m.n3)} / ${fmtInt(m.d3)} renseignés · taux de renseignement ${m.w3 ? fmtPct(m.d3 / m.w3) : "—"} (${fmtInt(m.d3)} / ${fmtInt(m.w3)})`,
-      "Fenêtre 2016-2017 verrouillée" + (yearIgnored ? " : le filtre Année est ignoré ici." : ".") + " Seuil : 100 marchés renseignés.", m.d3 >= 100),
-    card("Axe C · Budget", "5 · Montant total pondéré",
-      fmtNum(m.sumW / 1e9, 1) + " Md€", `N = ${fmtInt(m.nv)} attributions · Σ montant × POIDS`,
-      "Agrégat additif. Seuil : 30 attributions. Queue de distribution à vérifier avant tout audit.", m.nv >= 30),
-    card("Axe C · Budget", "Médiane des montants par attribution",
-      m.medV === null ? "" : fmtInt(Math.round(m.medV)) + " €", `N = ${fmtInt(m.nv)} attributions`,
-      "Valeur de contrôle du guide. Non pondérée. Seuil : 30 attributions.", m.nv >= 30)
+    card("Axe A · Concurrence", "1 · Taux d'offre unique, procédure ouverte", d1 ? fmtPct(n1 / d1) : "", `${fmtInt(n1)} / ${fmtInt(d1)} marchés avec au moins une offre`, "Seuil : 100 marchés. Sentinelles 940 et 999 exclues. Procédure ouverte seule.", d1 >= 100),
+    card("Axe A · Concurrence", "2 · Médiane du nombre d'offres, procédure ouverte", med === null ? "" : fmtNum(med, Number.isInteger(med) ? 0 : 1), `N = ${fmtInt(d1)} marchés`, "Agrégat non additif, recalculé sur les lignes. Seuil : 100 marchés.", d1 >= 100),
+    card("Axe B · PME", "3 · Part de PME parmi les renseignés", d3 ? fmtPct(n3 / d3) : "", `${fmtInt(n3)} / ${fmtInt(d3)} renseignés · renseignement ${w3 ? fmtPct(d3 / w3) : "—"} (${fmtInt(d3)} / ${fmtInt(w3)})`, "Fenêtre 2016-2017 verrouillée" + (f.annee ? " : filtre Année ignoré ici." : ".") + " Seuil : 100 renseignés.", d3 >= 100),
+    card("Axe C · Budget", "5 · Montant total pondéré", fmtNum(sumW / 1e9, 1) + " Md€", `N = ${fmtInt(vals.length)} attributions · Σ montant × POIDS`, "Agrégat additif. Seuil : 30 attributions.", vals.length >= 30),
+    card("Axe C · Budget", "Médiane des montants par attribution", medV === null ? "" : fmtInt(Math.round(medV)) + " €", `N = ${fmtInt(vals.length)} attributions`, "Valeur de contrôle du guide, non pondérée. Seuil : 30.", vals.length >= 30)
   ].join("");
+}
 
-  // Procédures rares : un tableau par procédure, jamais de total général.
-  const rc = R.cols, rows = select(R, f, false), by = {};
+// ---------- tri multiple ----------
+function sortRows(rows, keys) {
+  return rows.sort((a, b) => { for (const k of keys) { const x = a[k] ?? -Infinity, y = b[k] ?? -Infinity; if (x !== y) return y - x; } return 0; });
+}
+function head(cols, keys, onSort) {
+  return "<tr>" + cols.map(c => {
+    if (!c.k) return `<th class="${c.num ? "num" : ""}">${c.t}</th>`;
+    const i = keys.indexOf(c.k), mark = i === 0 ? " ↓" : i === 1 ? " ↓²" : "";
+    return `<th class="sort ${c.num ? "num" : ""}" data-sort="${c.k}" title="Trier (le tri précédent devient secondaire)">${c.t}${mark}</th>`;
+  }).join("") + "</tr>";
+}
+function bindSort(theadId, getKeys, setKeys) {
+  $(theadId).querySelectorAll("th.sort").forEach(th => th.onclick = () => {
+    const k = th.dataset.sort, cur = getKeys().filter(x => x !== k); setKeys([k, cur[0]]); render();
+  });
+}
+const chipRow = (id, opts, cur, set) => { $(id).innerHTML = opts.map(o => `<button type="button" class="chip" aria-pressed="${o[0] === cur}" data-v="${o[0]}">${o[1]}</button>`).join(""); $(id).querySelectorAll("button").forEach((b, j) => b.onclick = () => { set(opts[j][0]); render(); }); };
+
+// ---------- Vue 3 · Axe A ----------
+function renderA(f) {
+  const c = P.cols, cross = S.aCross, withProc = cross.includes("R");
+  const ope = codeOf(P, "proc", "OPE");
+  const segs = new Map(); let jeuTotal = 0, excl = { n: 0, ou: 0 };
+  for (const i of select(P, f, false, DIV)) {
+    const o = c.offers[i]; if (o === null || o < 1) continue;
+    const pk = P.dicts.proc[c.proc[i]];
+    if (!withProc && c.proc[i] !== ope) continue;           // KPI 1 : procédure ouverte
+    if (pk === undefined) continue;
+    const k = segKey(cross, i);
+    let s = segs.get(k); if (!s) segs.set(k, s = { k, label: segLabel(cross, i), filter: segFilter(cross, i), den: 0, num: 0, jeu: 0, offs: [], nocomp: NO_COMPET.has(pk) });
+    s.den++; s.offs.push(o);
+    const w = c.value[i] === null ? 0 : c.value[i] * c.poids[i];
+    if (o === 1) { s.num++; s.jeu += w; if (!s.nocomp) jeuTotal += w; }
+  }
+  let rows = [...segs.values()].map(s => Object.assign(s, { taux: s.num / s.den, med: median(s.offs), ok: s.den >= 100 }));
+  rows.forEach(s => { s.offs = null; });
+  const elig = rows.filter(s => s.ok && !s.nocomp);
+  const alert = sortRows(elig.filter(s => s.taux > S.aSeuil), ["jeu", "taux"]);
+  const chosen = new Set(alert.slice(0, S.aCap).map(s => s.k));
+  const jeuChosen = alert.slice(0, S.aCap).reduce((t, s) => t + s.jeu, 0);
+  const jeuAlert = alert.reduce((t, s) => t + s.jeu, 0);
+  rows.forEach(s => {
+    s.status = s.nocomp ? "nocomp" : !s.ok ? "low" : chosen.has(s.k) ? "act" : s.taux > S.aSeuil ? "alert" : s.med <= 2 ? "watch" : "";
+    s.rank = s.status === "act" ? 4 : s.status === "alert" ? 3 : s.status === "watch" ? 2 : s.status === "" ? 1 : 0;
+  });
+  // Les segments sous le seuil et sans concurrence ne remontent jamais en tête.
+  const main = sortRows(rows.filter(s => s.ok && !s.nocomp), S.aSort);
+  const tail = rows.filter(s => !s.ok || s.nocomp).sort((a, b) => (b.nocomp - a.nocomp) || b.den - a.den);
+  const watch = rows.filter(s => s.status === "watch").length;
+  $("a-kpis").innerHTML = [
+    [fmtInt(alert.length), `segments en alerte (> ${fmtPct(S.aSeuil, 0)}, N ≥ 100)`],
+    [fmtInt(Math.min(S.aCap, alert.length)), `dossiers retenus (capacité N = ${S.aCap})`],
+    [fmtEur(jeuChosen), `montant en jeu couvert · ${jeuAlert ? fmtPct(jeuChosen / jeuAlert) : "—"} des segments en alerte`],
+    [jeuTotal ? fmtPct(jeuChosen / jeuTotal) : "—", `de toute la dépense à offre unique du périmètre (${fmtEur(jeuTotal)})`],
+    [fmtInt(watch), "segments en liste de surveillance (sous le seuil, médiane ≤ 2 offres)"]
+  ].map(k => `<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join("");
+  $("a-note").textContent = (withProc ? "Toutes procédures du fichier principal ; NOC et AWP signalées et exclues du classement (pas de mise en concurrence publiée)." : "Procédure ouverte seulement (définition du KPI 1).") + " Montant en jeu = Σ montant × POIDS des attributions à offre unique du segment : la dépense à replacer en concurrence.";
+  const cols = [{ t: "Segment" }, { t: "Statut", k: "rank" }, { t: "Montant en jeu", k: "jeu", num: 1 }, { t: "Offre unique", k: "taux", num: 1 }, { t: "Num. / dén.", k: "den", num: 1 }, { t: "Médiane des offres", k: "med", num: 1 }];
+  $("a-head").innerHTML = head(cols, S.aSort);
+  bindSort("a-head", () => S.aSort, k => S.aSort = k);
+  const maxJeu = Math.max(1, ...main.map(s => s.jeu));
+  const tag = s => ({ act: '<span class="tag act">Instruire</span>', alert: '<span class="tag watch">Alerte hors capacité</span>', watch: '<span class="tag info">Surveillance</span>', low: '<span class="tag">Effectif insuffisant</span>', nocomp: '<span class="tag">Sans concurrence publiée</span>' }[s.status] || "");
+  const tr = (s, i) => `<tr class="click ${s.ok && !s.nocomp ? "" : "low"}" data-i="${i}"><td>${esc(s.label)}</td><td>${tag(s)}</td><td class="num">${fmtEur(s.jeu)}${s.ok && !s.nocomp ? `<div class="bar"><i style="width:${s.jeu / maxJeu * 100}%"></i></div>` : ""}</td><td class="num">${s.ok ? fmtPct(s.taux) : "—"}</td><td class="num">${fmtInt(s.num)} / ${fmtInt(s.den)}</td><td class="num">${s.ok ? fmtNum(s.med, Number.isInteger(s.med) ? 0 : 1) : "—"}</td></tr>`;
+  const shown = main.slice(0, 40), all = shown.concat(tail.slice(0, 15));
+  $("a-body").innerHTML = shown.map(tr).join("") + (tail.length ? `<tr><td colspan="6" class="hint">Segments hors classement : ${fmtInt(tail.filter(s => !s.ok).length)} sous le seuil de 100 marchés, ${fmtInt(tail.filter(s => s.nocomp && s.ok).length)} sans concurrence publiée. Les 15 plus gros :</td></tr>` + tail.slice(0, 15).map((s, j) => tr(s, shown.length + j)).join("") : "");
+  $("a-body").querySelectorAll("tr.click").forEach(row => row.onclick = () => { const s = all[+row.dataset.i]; drill({ axe: "A", seg: s.filter, label: "Axe A · " + s.label, onlyOpe: !withProc }); });
+  $("a-foot").textContent = `${fmtInt(main.length)} segments classés (40 premiers affichés). Tri : ${S.aSort.map(k => ({ rank: "statut (instruire, alerte, surveillance)", jeu: "montant en jeu", taux: "taux", den: "effectif", med: "médiane" }[k])).join(" puis ")}. Seuils : 100 marchés par segment ; alerte au-dessus du seuil choisi.`;
+}
+
+// ---------- Vue 3 · Axe B ----------
+function renderB(f) {
+  const c = P.cols, cross = S.bCross, yes = codeOf(P, "pme", "Y");
+  const segs = new Map(); let tot = { w: 0, ren: 0, pme: 0 };
+  for (const i of select(P, f, true, DIV)) {
+    const y = c.year[i]; if (y !== 2016 && y !== 2017) continue;
+    const k = segKey(cross, i);
+    let s = segs.get(k); if (!s) segs.set(k, s = { k, label: segLabel(cross, i), filter: segFilter(cross, i), w: 0, ren: 0, pme: 0, lk: 0, na: 0, enjeu: 0 });
+    s.w++; tot.w++;
+    if (c.pme[i] >= 0) { s.ren++; tot.ren++; if (c.pme[i] === yes) { s.pme++; tot.pme++; } }
+    const l = c.lots[i];
+    if (l !== null) { s.lk++; if (l === 0) { s.na++; if (c.value[i] !== null) s.enjeu += c.value[i] * c.poids[i]; } }
+  }
+  const rows = [...segs.values()].map(s => Object.assign(s, { part: s.ren ? s.pme / s.ren : null, rens: s.ren / s.w, pna: s.lk ? s.na / s.lk : null, ok: s.ren >= 100 }));
+  rows.forEach(s => { s.status = !s.ok ? "low" : s.part < 0.40 ? "act" : ""; s.prio = s.status === "act" ? 1 : 0; });
+  const main = rows.filter(s => s.ok).sort((a, b) => (b.prio - a.prio) || (b.enjeu - a.enjeu));
+  const low = rows.filter(s => !s.ok).sort((a, b) => b.ren - a.ren);
+  const act = main.filter(s => s.status === "act");
+  $("b-kpis").innerHTML = [
+    [tot.ren ? fmtPct(tot.pme / tot.ren) : "—", `part de PME du périmètre (${fmtInt(tot.pme)} / ${fmtInt(tot.ren)} renseignés)`],
+    [tot.w ? fmtPct(tot.ren / tot.w) : "—", `taux de renseignement de la variable PME (${fmtInt(tot.ren)} / ${fmtInt(tot.w)})`],
+    [fmtInt(act.length), "segments sous 40 % de PME (≥ 100 renseignés) : revue d'allotissement"],
+    [fmtEur(act.reduce((t, s) => t + s.enjeu, 0)), "montant non alloti de ces segments (enjeu)"]
+  ].map(k => `<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join("");
+  $("b-head").innerHTML = "<tr><th>Segment</th><th>Statut</th><th class='num'>Part de PME</th><th class='num'>PME / renseignés</th><th class='num'>Taux de renseignement</th><th class='num'>Part non allotie</th><th class='num'>Enjeu : montant non alloti</th></tr>";
+  const tr = (s, i) => `<tr class="click ${s.ok ? "" : "low"}" data-i="${i}"><td>${esc(s.label)}</td><td>${s.status === "act" ? '<span class="tag act">Revue d\'allotissement</span>' : s.status === "low" ? '<span class="tag">Effectif insuffisant</span>' : ""}${s.ok && s.rens < 0.5 ? ' <span class="tag watch">Renseignement &lt; 50 %</span>' : ""}</td><td class="num">${s.ok ? fmtPct(s.part) : "—"}</td><td class="num">${fmtInt(s.pme)} / ${fmtInt(s.ren)}</td><td class="num">${fmtPct(s.rens, 0)} <span class="hint">(${fmtInt(s.ren)} / ${fmtInt(s.w)})</span></td><td class="num">${s.pna === null ? "—" : fmtPct(s.pna, 0) + ` <span class="hint">(${fmtInt(s.na)} / ${fmtInt(s.lk)})</span>`}</td><td class="num">${fmtEur(s.enjeu)}</td></tr>`;
+  const shown = main.slice(0, 40), all = shown.concat(low.slice(0, 10));
+  $("b-body").innerHTML = shown.map(tr).join("") + (low.length ? `<tr><td colspan="7" class="hint">${fmtInt(low.length)} segments sous 100 marchés renseignés, non classés. Les 10 plus gros :</td></tr>` + low.slice(0, 10).map((s, j) => tr(s, shown.length + j)).join("") : "");
+  $("b-body").querySelectorAll("tr.click").forEach(row => row.onclick = () => { const s = all[+row.dataset.i]; drill({ axe: "B", seg: s.filter, label: "Axe B · " + s.label + " · 2016-2017", years: [2016, 2017] }); });
+  $("b-foot").textContent = "Classement : segments sous 40 % de PME d'abord, puis par montant non alloti décroissant (ce qui pourrait être découpé en lots). Lots inconnus exclus de la part non allotie. Un taux de renseignement faible rend la part de PME fragile : à vérifier avant d'ouvrir une revue.";
+}
+
+// ---------- Vue 3 · Axe C ----------
+function renderC(f) {
+  const c = P.cols, cross = S.cCross;
+  const rows = select(P, f, false, DIV).filter(i => c.z[i] !== null);
+  const n = rows.length, cap = S.cCap === "5" ? Math.round(n * 0.05) : Math.min(+S.cCap, n);
+  const w = i => c.value[i] * c.poids[i];
+  const byZ = rows.slice().sort((a, b) => c.z[b] - c.z[a]);
+  const list = byZ.slice(0, cap);
+  const wTot = rows.reduce((t, i) => t + w(i), 0), wList = list.reduce((t, i) => t + w(i), 0);
+  const nZ3 = rows.filter(i => c.z[i] > 3).length, inList3 = list.filter(i => c.z[i] > 3).length;
+  // Dernier centile des montants du périmètre (test demandé avant de pondérer l'audit par pays).
+  const vals = rows.map(i => c.value[i]).sort((a, b) => a - b);
+  const p99 = vals.length ? vals[Math.floor(0.99 * (vals.length - 1))] : Infinity;
+  const wTot99 = rows.reduce((t, i) => t + (c.value[i] <= p99 ? w(i) : 0), 0);
+  $("c-kpis").innerHTML = [
+    [fmtInt(cap), `attributions dans la liste d'audit (${fmtPct(n ? cap / n : 0)} des ${fmtInt(n)} scorées)`],
+    [wTot ? fmtPct(wList / wTot) : "—", `du montant pondéré couvert (${fmtEur(wList)} / ${fmtEur(wTot)})`],
+    [fmtInt(nZ3), `attributions à z > 3 dans le périmètre, dont ${fmtInt(inList3)} dans la liste`],
+    [list.length ? fmtNum(c.z[list[list.length - 1]], 1) : "—", "z de la dernière attribution retenue (seuil effectif de la liste)"]
+  ].map(k => `<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join("");
+  // Composition par pays : part de la liste contre part des attributions et du montant (avec et sans dernier centile).
+  const byP = new Map();
+  const add = (i, key, v) => { const p = c.pays[i]; let s = byP.get(p); if (!s) byP.set(p, s = { p, l: 0, n: 0, w: 0, w99: 0 }); s[key] += v; };
+  rows.forEach(i => { add(i, "n", 1); add(i, "w", w(i)); if (c.value[i] <= p99) add(i, "w99", w(i)); });
+  list.forEach(i => add(i, "l", 1));
+  const comp = [...byP.values()].filter(s => s.l > 0).sort((a, b) => b.l - a.l).slice(0, 8);
+  $("c2-head").innerHTML = "<tr><th>Pays</th><th class='num'>Part de la liste d'audit</th><th class='num'>Part des attributions</th><th class='num'>Part du montant pondéré</th><th class='num'>… sans le dernier centile</th></tr>";
+  $("c2-body").innerHTML = comp.map(s => `<tr class="click" data-p="${s.p}"><td>${esc(PAYS[P.dicts.pays[s.p]] || P.dicts.pays[s.p])}</td><td class="num"><b>${fmtPct(s.l / cap)}</b> <span class="hint">(${fmtInt(s.l)} / ${fmtInt(cap)})</span></td><td class="num">${fmtPct(s.n / n)} <span class="hint">(${fmtInt(s.n)})</span></td><td class="num">${fmtPct(s.w / wTot)}</td><td class="num">${fmtPct(s.w99 / wTot99)}</td></tr>`).join("");
+  $("c2-body").querySelectorAll("tr.click").forEach(r => r.onclick = () => drill({ axe: "C", seg: { P: +r.dataset.p }, label: `Axe C · liste d'audit (N = ${fmtInt(cap)}) · ${PAYS[P.dicts.pays[+r.dataset.p]]}`, ids: new Set(list), sort: "z" }));
+  $("c2-foot").innerHTML = `Une seule liste d'audit : les N attributions au z le plus élevé du périmètre. Un pays surreprésenté dans la liste par rapport à sa part des attributions pose la question d'une pondération par pays. Le dernier centile (montants au-dessus de ${fmtEur(p99)}) est retiré dans la dernière colonne : si la part d'un pays s'effondre, elle tient à quelques très gros marchés. <button class="link" id="c-all" type="button">Voir toute la liste d'audit →</button>`;
+  $("c-all").onclick = () => drill({ axe: "C", seg: {}, label: `Axe C · liste d'audit complète (N = ${fmtInt(cap)})`, ids: new Set(list), sort: "z" });
+  // Segments.
+  const segs = new Map();
   for (const i of rows) {
+    const k = segKey(cross, i);
+    let s = segs.get(k); if (!s) segs.set(k, s = { k, label: segLabel(cross, i), filter: segFilter(cross, i), n: 0, w: 0, a: 0, wa: 0 });
+    s.n++; s.w += w(i); if (c.z[i] > 3) { s.a++; s.wa += w(i); }
+  }
+  const all = [...segs.values()].map(s => Object.assign(s, { ok: s.n >= 30, pa: s.a / s.n }));
+  const main = all.filter(s => s.ok && s.a > 0).sort((a, b) => b.wa - a.wa);
+  const nLow = all.filter(s => !s.ok).length;
+  $("c-head").innerHTML = "<tr><th>Segment</th><th class='num'>Montant atypique (z &gt; 3)</th><th class='num'>Attributions atypiques</th><th class='num'>Part atypique</th><th class='num'>Montant pondéré du segment</th></tr>";
+  const maxW = Math.max(1, ...main.map(s => s.wa));
+  const shown = main.slice(0, 30);
+  $("c-body").innerHTML = shown.map((s, i) => `<tr class="click" data-i="${i}"><td>${esc(s.label)}</td><td class="num">${fmtEur(s.wa)}<div class="bar"><i style="width:${s.wa / maxW * 100}%;background:var(--warn)"></i></div></td><td class="num">${fmtInt(s.a)} / ${fmtInt(s.n)}</td><td class="num">${fmtPct(s.pa)}</td><td class="num">${fmtEur(s.w)}</td></tr>`).join("") || `<tr><td colspan="5" class="hint">Aucun segment d'au moins 30 attributions ne contient d'attribution à z &gt; 3.</td></tr>`;
+  $("c-body").querySelectorAll("tr.click").forEach(r => r.onclick = () => { const s = shown[+r.dataset.i]; drill({ axe: "C", seg: s.filter, label: "Axe C · " + s.label, sort: "z" }); });
+  $("c-foot").textContent = `${fmtInt(main.length)} segments d'au moins 30 attributions contiennent des attributions atypiques (30 premiers affichés) ; ${fmtInt(nLow)} segments sous 30 attributions ne sont pas classés. Montants pondérés (montant × POIDS).`;
+}
+
+// ---------- Vue 4 · exploration ----------
+function drill(sel) { S.prev.push(S.tab); S.x = sel; S.xSort = sel.sort || "value"; S.xPage = 0; go("v4"); }
+function renderX(f) {
+  const c = P.cols, sel = S.x || { seg: {}, label: "toutes les attributions des filtres de contexte" };
+  const ope = codeOf(P, "proc", "OPE");
+  let rows = select(P, f, !!sel.years, DIV).filter(i => {
+    for (const d in sel.seg) if (keyOf[d](i) !== sel.seg[d]) return false;
+    if (sel.years && !sel.years.includes(c.year[i])) return false;
+    if (sel.onlyOpe && (c.proc[i] !== ope || c.offers[i] === null || c.offers[i] < 1)) return false;
+    if (sel.ids && !sel.ids.has(i)) return false;
+    return true;
+  });
+  const key = { z: i => c.z[i] ?? -Infinity, value: i => c.value[i] ?? -Infinity, offers: i => -(c.offers[i] ?? Infinity) }[S.xSort];
+  rows.sort((a, b) => key(b) - key(a));
+  const per = 25, pages = Math.max(1, Math.ceil(rows.length / per)); S.xPage = Math.min(S.xPage, pages - 1);
+  $("x-sel").innerHTML = `Sélection : <b>${esc(sel.label)}</b> · ${fmtInt(rows.length)} attributions`;
+  const ou = rows.filter(i => c.offers[i] === 1).length, wo = rows.filter(i => c.offers[i] !== null && c.offers[i] >= 1).length;
+  $("x-stats").textContent = `Offre unique : ${fmtInt(ou)} / ${fmtInt(wo)} attributions avec au moins une offre · montant pondéré ${fmtEur(rows.reduce((t, i) => t + (c.value[i] ?? 0) * c.poids[i], 0))}.`;
+  chipRow("x-sort", [["z", "Indice d'anomalie"], ["value", "Montant"], ["offers", "Moins d'offres"]], S.xSort, v => { S.xSort = v; S.xPage = 0; });
+  $("x-head").innerHTML = "<tr><th>ID_AW</th><th>Année</th><th>Pays</th><th>Secteur</th><th>Procédure</th><th>Contrat</th><th class='num'>Offres</th><th class='num'>Lots</th><th>PME</th><th class='num'>Montant</th><th class='num'>z</th></tr>";
+  const yn = v => v < 0 ? "non renseigné" : P.dicts.pme[v] === "Y" ? "Oui" : "Non";
+  $("x-body").innerHTML = rows.slice(S.xPage * per, S.xPage * per + per).map(i => `<tr><td>${c.id[i]}</td><td>${c.year[i]}</td><td>${esc(P.dicts.pays[c.pays[i]] || "")}</td><td title="CPV ${c.cpv[i] || ""}">${c.cpv[i] ? c.cpv[i] : "—"}</td><td>${esc(P.dicts.proc[c.proc[i]] || "—")}</td><td>${esc(CONTRAT[P.dicts.contrat[c.contrat[i]]] || "")}</td><td class="num">${c.offers[i] ?? "—"}</td><td class="num">${c.lots[i] ?? "—"}</td><td>${yn(c.pme[i])}</td><td class="num">${c.value[i] === null ? "—" : fmtEur(c.value[i])}</td><td class="num">${c.z[i] === null ? "—" : fmtNum(c.z[i], 1)}</td></tr>`).join("") || `<tr><td colspan="11" class="hint">Aucune attribution pour cette sélection.</td></tr>`;
+  $("x-page").textContent = rows.length ? `${fmtInt(S.xPage * per + 1)}–${fmtInt(Math.min(rows.length, S.xPage * per + per))} sur ${fmtInt(rows.length)}` : "";
+  $("x-prev").disabled = S.xPage === 0; $("x-next").disabled = S.xPage >= pages - 1;
+}
+
+// ---------- rares et traçabilité ----------
+function renderRares(f) {
+  const rc = R.cols, by = {};
+  for (const i of select(R, f, false, null)) {
     const k = R.dicts.proc[rc.proc[i]] || "non renseignée";
     const b = by[k] || (by[k] = { n: 0, ou: 0, den: 0, offs: [] });
-    b.n++; const o = rc.offers[i];
-    if (o !== null && o >= 1) { b.den++; b.offs.push(o); if (o === 1) b.ou++; }
+    b.n++; const o = rc.offers[i]; if (o !== null && o >= 1) { b.den++; b.offs.push(o); if (o === 1) b.ou++; }
   }
-  $("rares").innerHTML = Object.keys(by).sort().map(k => {
-    const b = by[k], ok = b.den >= 100;
-    return `<tr><td><span class="tag">${k}</span></td><td>${fmtInt(b.n)}</td><td>${ok ? fmtPct(b.ou / b.den) : "effectif insuffisant"}</td><td>${fmtInt(b.ou)} / ${fmtInt(b.den)}</td><td>${b.offs.length ? fmtNum(median(b.offs), 0) : "—"}</td></tr>`;
-  }).join("") || `<tr><td colspan="5">Aucune attribution pour cette sélection.</td></tr>`;
-
-  const act = [f.pays && "Pays = " + f.pays, f.annee && "Année = " + f.annee, f.contrat && "Contrat = " + { W: "Travaux", U: "Fournitures", S: "Services" }[f.contrat]].filter(Boolean);
-  $("perim").textContent = `Périmètre : fichier principal, ${fmtInt(m.lignes)} attributions${act.length ? " · " + act.join(" · ") : " · aucun filtre"}. Recalcul en ${Math.round(performance.now() - t0)} ms.`;
+  $("rares").innerHTML = Object.keys(by).sort().map(k => { const b = by[k]; return `<tr><td><span class="tag">${k}</span></td><td class="num">${fmtInt(b.n)}</td><td class="num">${b.den >= 100 ? fmtPct(b.ou / b.den) : "effectif insuffisant"}</td><td class="num">${fmtInt(b.ou)} / ${fmtInt(b.den)}</td><td class="num">${b.offs.length ? fmtNum(median(b.offs), 0) : "—"}</td></tr>`; }).join("") || `<tr><td colspan="5">Aucune attribution.</td></tr>`;
+}
+function journal() {
+  const jp = P.journal, jr = R.journal, a = jp.indice_anomalie;
+  const L = [["Fichier principal brut", fmtInt(jp.lignes_brutes)], ["Doublons stricts retirés en séance 3 (principal)", fmtInt(jp.doublons_stricts_s3)], ["Fichier principal FINAL", fmtInt(jp.lignes_final)],
+    ["ID_AW 164662498 présent 3 fois : lignes retirées (une attribution = une ligne)", fmtInt(jp.id_triple_retire)], ["Sentinelle 940 déjà mise à vide en séance 3", fmtInt(jp.sentinelle_940_deja_isolee)],
+    ["Valeur 999 mise à vide comme 940 (BG 2014, même acheteur)", fmtInt(jp.sentinelle_999_mise_a_vide)], ["Lignes utilisées par l'application (principal)", fmtInt(jp.lignes_application)],
+    ["Procédures rares brut → FINAL (2 doublons stricts)", fmtInt(jr.lignes_brutes) + " → " + fmtInt(jr.lignes_final)], ["Total des doublons stricts de la séance 3", "336 = 334 (principal) + 2 (rares)"],
+    ["Indice d'anomalie : R² du modèle (log10 du montant)", fmtNum(a.modele_r2, 3) + " sur " + fmtInt(a.n_modele) + " attributions"],
+    ["Attributions à z > 3 : nouvel indice / ancienne strate CPV × contrat", fmtInt(a.z_sup3_nouveau) + " (" + fmtPct(a.part_montant_z_sup3_nouveau) + " du montant) / " + fmtInt(a.z_sup3_ancien_cpv_contrat) + " (" + fmtPct(a.part_montant_z_sup3_ancien) + ")"]];
+  $("journal").innerHTML = L.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td></tr>`).join("");
 }
 
-function journal() {
-  const jp = P.journal, jr = R.journal;
-  const L = [
-    ["Fichier principal brut", fmtInt(jp.lignes_brutes)],
-    ["Doublons stricts retirés en séance 3 (principal)", fmtInt(jp.doublons_stricts_s3)],
-    ["Fichier principal FINAL", fmtInt(jp.lignes_final)],
-    ["ID_AW 164662498 présent 3 fois : lignes retirées (une attribution = une ligne)", fmtInt(jp.id_triple_retire)],
-    ["Sentinelle 940 déjà mise à vide en séance 3", fmtInt(jp.sentinelle_940_deja_isolee)],
-    ["Valeur 999 mise à vide comme 940 (BG 2014, même acheteur)", fmtInt(jp.sentinelle_999_mise_a_vide)],
-    ["Lignes utilisées par l'application (principal)", fmtInt(jp.lignes_application)],
-    ["Procédures rares brut → FINAL (2 doublons stricts)", fmtInt(jr.lignes_brutes) + " → " + fmtInt(jr.lignes_final)],
-    ["Total des doublons stricts de la séance 3", "336 = 334 (principal) + 2 (rares)"]
-  ];
-  $("journal").innerHTML = L.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+// ---------- navigation ----------
+const TABS = [["v1", "1 · Globale", "Où en sommes-nous ?"], ["v2", "2 · Analyse", "Pourquoi ?"], ["v3", "3 · Segmentation", "Où agir ?"], ["v4", "4 · Exploration", "Quel cas précis ?"], ["v9", "Mesures", "Traçabilité"]];
+function go(tab) { S.tab = tab; try { history.replaceState(null, "", "#" + tab); } catch (e) {} render(); window.scrollTo(0, 0); }
+function render() {
+  if (!P) return;
+  const t0 = performance.now(), f = filt();
+  $("tabs").innerHTML = TABS.map(t => `<button role="tab" aria-selected="${S.tab === t[0]}" data-t="${t[0]}">${t[1]}<small>${t[2]}</small></button>`).join("");
+  $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => { if (b.dataset.t !== S.tab) S.prev.push(S.tab); go(b.dataset.t); });
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("hidden", v.id !== S.tab));
+  if (S.tab === "v1") renderV1(f);
+  if (S.tab === "v3") {
+    chipRow("axe-chips", [["A", "A · Concurrence"], ["B", "B · PME"], ["C", "C · Budget"]], S.axe, v => S.axe = v);
+    ["A", "B", "C"].forEach(a => $("ax-" + a).classList.toggle("hidden", a !== S.axe));
+    if (S.axe === "A") { chipRow("a-cross", [["PS", "Pays × secteur"], ["PR", "Pays × procédure"], ["SR", "Secteur × procédure"]], S.aCross, v => S.aCross = v); chipRow("a-seuil", [[0.30, "30 %"], [0.40, "40 %"], [0.50, "50 %"]], S.aSeuil, v => S.aSeuil = v); renderA(f); }
+    if (S.axe === "B") { chipRow("b-cross", [["P", "Pays"], ["PS", "Pays × secteur"], ["PC", "Pays × contrat"]], S.bCross, v => S.bCross = v); renderB(f); }
+    if (S.axe === "C") { chipRow("c-cross", [["PS", "Pays × secteur"], ["PC", "Pays × contrat"], ["SR", "Secteur × procédure"]], S.cCross, v => S.cCross = v); chipRow("c-cap", [["100", "100"], ["500", "500"], ["1000", "1 000"], ["5", "5 % du périmètre"]], S.cCap, v => S.cCap = v); renderC(f); }
+  }
+  if (S.tab === "v4") renderX(f);
+  if (S.tab === "v9") renderRares(f);
+  const act = [f.pays && "Pays = " + (PAYS[f.pays] || f.pays), f.annee && "Année = " + f.annee, f.contrat && "Contrat = " + CONTRAT[f.contrat], f.sect && "Secteur = " + f.sect.padStart(2, "0")].filter(Boolean);
+  $("perim").textContent = `Périmètre : fichier principal, 2009-2017${act.length ? " · " + act.join(" · ") : " · aucun filtre"}. Recalcul en ${Math.round(performance.now() - t0)} ms.`;
 }
 
 async function init() {
   try {
     const [p, r] = await Promise.all(["data/principal.json", "data/rares.json"].map(u => fetch(u).then(x => { if (!x.ok) throw new Error(u + " " + x.status); return x.json(); })));
     P = p; R = r;
-    P.dicts.pays.forEach(c => $("f-pays").insertAdjacentHTML("beforeend", `<option>${c}</option>`));
+    DIV = Int16Array.from(P.cols.cpv, v => v ? +v.slice(0, 2) : -1);
+    P.dicts.pays.forEach(code => $("f-pays").insertAdjacentHTML("beforeend", `<option value="${code}">${esc(PAYS[code] || code)}</option>`));
     for (let y = 2009; y <= 2017; y++) $("f-annee").insertAdjacentHTML("beforeend", `<option>${y}</option>`);
-    ["f-pays", "f-annee", "f-contrat"].forEach(id => $(id).addEventListener("change", render));
-    $("reset").addEventListener("click", () => { ["f-pays", "f-annee", "f-contrat"].forEach(id => $(id).value = ""); render(); });
-    $("status").textContent = `Données chargées : ${fmtInt(P.n)} attributions (principal) et ${fmtInt(R.n)} (procédures rares), deux sources distinctes.`;
+    [...new Set(DIV)].filter(d => d >= 0).sort((a, b) => a - b).forEach(d => { const k = String(d).padStart(2, "0"); $("f-sect").insertAdjacentHTML("beforeend", `<option value="${d}">${k} · ${esc(CPV[k] || "division CPV")}</option>`); });
+    ["f-pays", "f-annee", "f-contrat", "f-sect"].forEach(id => $(id).addEventListener("change", () => { S.xPage = 0; render(); }));
+    $("reset").onclick = () => { ["f-pays", "f-annee", "f-contrat", "f-sect"].forEach(id => $(id).value = ""); render(); };
+    $("a-cap").oninput = e => { S.aCap = +e.target.value; $("a-cap-v").textContent = S.aCap; render(); };
+    $("x-prev").onclick = () => { S.xPage--; render(); }; $("x-next").onclick = () => { S.xPage++; render(); };
+    $("x-back").onclick = () => go(S.prev.pop() || "v3");
+    $("status").textContent = `Données chargées : ${fmtInt(P.n)} attributions (fichier principal) et ${fmtInt(R.n)} (procédures rares), deux sources distinctes jamais additionnées.`;
+    const h = (location.hash || "").slice(1); if (TABS.some(t => t[0] === h)) S.tab = h;
     journal(); render();
-  } catch (e) {
-    $("status").textContent = "Erreur de chargement des données : " + e.message;
-  }
+  } catch (e) { $("status").textContent = "Erreur de chargement des données : " + e.message; }
 }
 init();
 </script>

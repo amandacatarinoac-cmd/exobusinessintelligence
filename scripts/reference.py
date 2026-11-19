@@ -16,7 +16,7 @@ def load(path):
     n, c, dic = d["n"], d["cols"], d["dicts"]
     rows = []
     for i in range(n):
-        r = {k: c[k][i] for k in ("id", "year", "lots", "offers", "value", "poids")}
+        r = {k: c[k][i] for k in ("id", "year", "lots", "offers", "value", "poids", "cpv", "z")}
         for k in dic:
             code = c[k][i]
             r[k] = dic[k][code] if code >= 0 else None
@@ -47,8 +47,52 @@ def kpis(rows, pays=None, annee=None, contrat=None):
     return out
 
 
+def vue3(rows, seuil=0.40, cap=20, audit=500):
+    """Contrôles de la vue 3 sans filtre : axe A (pays × secteur, procédure
+    ouverte), axe B (pays, 2016-2017), axe C (liste d'audit des N plus forts z)."""
+    from collections import defaultdict
+    out = {}
+    seg = defaultdict(lambda: [0, 0, 0.0])  # num, den, montant en jeu
+    for r in rows:
+        if r["proc"] != "OPE" or r["offers"] is None or r["offers"] < 1:
+            continue
+        s = seg[(r["pays"], (r["cpv"] or "??")[:2])]
+        s[1] += 1
+        if r["offers"] == 1:
+            s[0] += 1
+            s[2] += (r["value"] or 0) * r["poids"]
+    total = sum(s[2] for s in seg.values())
+    alert = sorted([(k, s) for k, s in seg.items() if s[1] >= 100 and s[0] / s[1] > seuil],
+                   key=lambda t: -t[1][2])
+    out["A_segments_alerte"] = len(alert)
+    out["A_top3"] = [(k, s[0], s[1], round(s[0] / s[1], 3), round(s[2] / 1e9, 2)) for k, s in alert[:3]]
+    covered = sum(s[2] for _, s in alert[:cap])
+    out["A_couvert_Md"] = (round(covered / 1e9, 2), round(covered / sum(s[2] for _, s in alert), 3), round(covered / total, 3))
+    b = defaultdict(lambda: [0, 0, 0])  # pme, renseignés, attributions
+    for r in rows:
+        if r["year"] in (2016, 2017):
+            s = b[r["pays"]]
+            s[2] += 1
+            if r["pme"] is not None:
+                s[1] += 1
+                s[0] += r["pme"] == "Y"
+    out["B_sous_40"] = sorted((k, s[0], s[1], round(s[0] / s[1], 3)) for k, s in b.items() if s[1] >= 100 and s[0] / s[1] < 0.40)
+    sc = sorted((r for r in rows if r["z"] is not None), key=lambda r: -r["z"])
+    lst = sc[:audit]
+    w = lambda r: r["value"] * r["poids"]
+    out["C_z_sup3"] = sum(1 for r in sc if r["z"] > 3)
+    out["C_liste_couverture"] = round(sum(map(w, lst)) / sum(map(w, sc)), 4)
+    uk = sum(1 for r in lst if r["pays"] == "UK")
+    out["C_UK_liste"] = (uk, round(uk / audit, 3))
+    return out
+
+
 if __name__ == "__main__":
     base = sys.argv[1]
+    if len(sys.argv) > 2 and sys.argv[2] == "vue3":
+        for k, v in vue3(load(f"{base}/principal.json")).items():
+            print(f"{k:22s} {v}")
+        sys.exit()
     args = dict(a.split("=") for a in sys.argv[2:])
     if "annee" in args:
         args["annee"] = int(args["annee"])

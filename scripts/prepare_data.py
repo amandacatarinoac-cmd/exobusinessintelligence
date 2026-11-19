@@ -17,7 +17,9 @@ Chaque règle est consignée dans le registre des écarts.
 import json
 import sys
 
+import numpy as np
 import pandas as pd
+import statsmodels.formula.api as smf
 
 ID_TRIPLE = 164662498
 SENTINELLE_999 = 999
@@ -44,6 +46,65 @@ def num(series, nd=None):
     return out
 
 
+def lots_class(x):
+    if pd.isna(x):
+        return "inconnu"
+    x = int(x)
+    if x == 0:
+        return "non alloti"
+    if x == 1:
+        return "1"
+    if x <= 5:
+        return "2-5"
+    if x <= 10:
+        return "6-10"
+    return "11+"
+
+
+def robust_z(r):
+    med = np.median(r)
+    mad = np.median(np.abs(r - med)) * 1.4826
+    return (r - med) / mad
+
+
+def anomaly(p):
+    """KPI 6 · indice d'anomalie (retour du rendu 4, priorité 2).
+
+    Résidu de la régression du log10 du montant sur ce que le marché
+    annonce : secteur (division CPV) × type de contrat, pays, année,
+    classe de lots, procédure. z robuste = (résidu − médiane) / (1,4826 × MAD).
+    L'ancienne version (S4) n'utilisait que la strate CPV × contrat ;
+    elle est recalculée ici pour chiffrer l'écart dans le registre.
+    """
+    d = pd.DataFrame({
+        "lv": p["AWARD_VALUE_LOG10"],
+        "cpvdiv": p["CPV"].astype("string").str[3:5].fillna("NA"),
+        "contrat": p["TYPE_OF_CONTRACT"].astype("string").fillna("NA"),
+        "pays": p["ISO_COUNTRY_CODE"].astype("string").fillna("NA"),
+        "year": p["YEAR"].astype(str),
+        "lots": p["LOTS_NUMBER"].map(lots_class),
+        "proc": p["TOP_TYPE"].astype("string").fillna("NA"),
+    })
+    ok = d["lv"].notna()
+    fit = smf.ols("lv ~ C(cpvdiv):C(contrat) + C(pays) + C(year) + C(lots) + C(proc)",
+                  data=d[ok].astype({c: str for c in d.columns if c != "lv"})).fit()
+    z = pd.Series(np.nan, index=p.index)
+    z[ok] = robust_z(fit.resid.to_numpy())
+    z = z.round(2)  # précision publiée : les comptes du journal utilisent la même valeur que l'application
+    # Ancienne strate S4 (CPV × contrat), pour comparaison seulement.
+    strat = d[ok].groupby(["cpvdiv", "contrat"])["lv"]
+    z_old = (d.loc[ok, "lv"] - strat.transform("mean")) / strat.transform("std")
+    w = (p["AWARD_VALUE_EURO"] * p["POIDS"])[ok]
+    comp = {
+        "modele_r2": round(fit.rsquared, 3), "n_modele": int(fit.nobs),
+        "z_sup3_nouveau": int((z[ok] > 3).sum()),
+        "part_montant_z_sup3_nouveau": round(float(w[z[ok] > 3].sum() / w.sum()), 3),
+        "z_sup3_ancien_cpv_contrat": int((z_old > 3).sum()),
+        "part_montant_z_sup3_ancien": round(float(w[z_old > 3].sum() / w.sum()), 3),
+    }
+    return z, comp
+
+
 def build(df, cats_cols, journal):
     cols, dicts = {}, {}
     cols["id"] = num(df["ID_AW"])
@@ -54,6 +115,8 @@ def build(df, cats_cols, journal):
     cols["value"] = num(df["AWARD_VALUE_EURO"], 2)
     cols["poids"] = num(df["POIDS"], 2)
     cols["cpv"] = [None if pd.isna(c) else str(c).replace("CPV", "") for c in df["CPV"].tolist()]
+    if "Z" in df.columns:
+        cols["z"] = num(df["Z"], 2)
     for key, col in cats_cols.items():
         dicts[key], cols[key] = encode_cat(df[col])
     return {"n": len(df), "dicts": dicts, "cols": cols, "journal": journal}
@@ -80,6 +143,9 @@ def main(p_path, r_path, out_dir):
         "sentinelle_940_deja_isolee": int(p["NUMBER_OFFERS_SENTINELLE"].sum()),
         "lignes_application": len(p),
     }
+    z, comp = anomaly(p)
+    p["Z"] = z
+    journal_p["indice_anomalie"] = comp
     r = pd.read_excel(r_path, sheet_name=0)
     journal_r = {"lignes_brutes": 6024, "doublons_stricts_s3": 2, "lignes_final": len(r),
                  "lignes_application": len(r)}
