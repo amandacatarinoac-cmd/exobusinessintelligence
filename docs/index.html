@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observatoire des marchés publics</title>
+<style>
+:root{--bg:#F8FAFE;--card:#FFFFFF;--ink:#14213D;--muted:#4A5466;--line:#DDE1E7;--accent:#1F4FD1;--warn:#B34700;--grey:#8A93A3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1522;--card:#182033;--ink:#E8ECF4;--muted:#A9B2C3;--line:#2B3550;--accent:#7A9BFF;--warn:#FF9A5C;--grey:#7D879A}}
+:root[data-theme="dark"]{--bg:#0F1522;--card:#182033;--ink:#E8ECF4;--muted:#A9B2C3;--line:#2B3550;--accent:#7A9BFF;--warn:#FF9A5C;--grey:#7D879A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header,main,footer{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0 2px}h2{font-size:17px;margin:28px 0 8px}
+.sub{color:var(--muted);margin:0}
+.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+.filters label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+select,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px}
+button{cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card .axe{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.card .t{font-weight:600;margin:2px 0 6px}
+.big{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.big.low{color:var(--grey);font-size:18px}
+.n{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rule{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);margin-top:8px;padding-top:6px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}
+th{font-size:12px;color:var(--muted);font-weight:600}
+.status{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;background:var(--line);color:var(--ink)}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<header>
+  <h1>Observatoire européen des marchés publics</h1>
+  <p class="sub">Application décisionnelle · version de travail v0 : couche de mesures recalculée à partir des lignes. Les quatre vues arrivent dans les versions suivantes.</p>
+  <p class="status" id="status">Chargement des données…</p>
+</header>
+<main>
+  <div class="filters" aria-label="Filtres">
+    <label>Pays<select id="f-pays"><option value="">Tous</option></select></label>
+    <label>Année<select id="f-annee"><option value="">2009-2017</option></select></label>
+    <label>Type de contrat<select id="f-contrat"><option value="">Tous</option><option value="W">Travaux</option><option value="U">Fournitures</option><option value="S">Services</option></select></label>
+    <button id="reset" type="button">Réinitialiser</button>
+  </div>
+  <p class="status" id="perim"></p>
+
+  <h2>Fichier principal · indicateurs recalculés</h2>
+  <div class="grid" id="kpis"></div>
+
+  <h2>Procédures rares · fichier séparé, jamais additionné au principal</h2>
+  <p class="status">Lu procédure par procédure (erreur sanctionnée n° 11 : empiler les deux fichiers). Mêmes filtres pays, année, contrat.</p>
+  <div class="scroll"><table><thead><tr><th>Procédure</th><th>Attributions</th><th>Offre unique</th><th>Numérateur / dénominateur</th><th>Médiane des offres</th></tr></thead><tbody id="rares"></tbody></table></div>
+
+  <h2>Traçabilité des données</h2>
+  <div class="scroll"><table><tbody id="journal"></tbody></table></div>
+</main>
+<footer><p class="status">Projet BI, Dashboards &amp; Data Storytelling · M2 PSB · Ingryd Lo Tierzo Silva et Sara Lhasseni. Données : échantillon des marchés publics européens 2009-2017, fichiers FINAL de la séance 3.</p></footer>
+
+<script>
+"use strict";
+const fmtInt = n => n.toLocaleString("fr-FR");
+const fmtPct = x => (x * 100).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " %";
+const fmtNum = (x, d) => x.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const $ = id => document.getElementById(id);
+
+function median(arr) {               // médiane exacte, jamais une moyenne de médianes
+  if (!arr.length) return null;
+  const a = Float64Array.from(arr).sort();
+  const m = a.length >> 1;
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+function code(d, dim, val) { return val === "" ? null : d.dicts[dim].indexOf(val); }
+
+// Filtre commun : renvoie les indices de lignes retenues.
+function select(d, f, ignoreYear) {
+  const c = d.cols, out = [];
+  const p = code(d, "pays", f.pays), k = code(d, "contrat", f.contrat), y = f.annee === "" ? null : +f.annee;
+  for (let i = 0; i < d.n; i++) {
+    if (p !== null && c.pays[i] !== p) continue;
+    if (k !== null && c.contrat[i] !== k) continue;
+    if (!ignoreYear && y !== null && c.year[i] !== y) continue;
+    out.push(i);
+  }
+  return out;
+}
+
+// Chaque indicateur = numérateur et dénominateur séparés, quotient calculé ici, effectif rendu à côté.
+function measures(d, f) {
+  const c = d.cols, ope = code(d, "proc", "OPE"), yes = code(d, "pme", "Y");
+  const rows = select(d, f, false);
+  let n1 = 0, d1 = 0, offs = [], vals = [], sumW = 0;
+  for (const i of rows) {
+    const o = c.offers[i];
+    if (c.proc[i] === ope && o !== null && o >= 1) { d1++; if (o === 1) n1++; offs.push(o); }
+    const v = c.value[i];
+    if (v !== null) { vals.push(v); sumW += v * c.poids[i]; }
+  }
+  // KPI 3 : fenêtre 2016-2017 verrouillée, le filtre année ne s'applique pas.
+  let n3 = 0, d3 = 0, w3 = 0;
+  for (const i of select(d, f, true)) {
+    const y = c.year[i]; if (y !== 2016 && y !== 2017) continue;
+    w3++; if (c.pme[i] >= 0) { d3++; if (c.pme[i] === yes) n3++; }
+  }
+  return { lignes: rows.length, n1, d1, med: median(offs), nv: vals.length, medV: median(vals), sumW, n3, d3, w3 };
+}
+
+function card(axe, titre, valeur, effectif, regle, ok) {
+  return `<div class="card"><div class="axe">${axe}</div><div class="t">${titre}</div>
+    <div class="big${ok ? "" : " low"}">${ok ? valeur : "effectif insuffisant"}</div>
+    <div class="n">${effectif}</div><div class="rule">${regle}</div></div>`;
+}
+
+let P, R;
+function render() {
+  const t0 = performance.now();
+  const f = { pays: $("f-pays").value, annee: $("f-annee").value, contrat: $("f-contrat").value };
+  const m = measures(P, f);
+  const yearIgnored = f.annee !== "";
+  $("kpis").innerHTML = [
+    card("Axe A · Concurrence", "1 · Taux d'offre unique, procédure ouverte",
+      m.d1 ? fmtPct(m.n1 / m.d1) : "", `${fmtInt(m.n1)} / ${fmtInt(m.d1)} marchés avec au moins une offre`,
+      "Seuil d'affichage : 100 marchés. Sentinelles 940 et 999 exclues. Hors NOC, NIC, RES, AWP.", m.d1 >= 100),
+    card("Axe A · Concurrence", "2 · Médiane du nombre d'offres, procédure ouverte",
+      m.med === null ? "" : fmtNum(m.med, Number.isInteger(m.med) ? 0 : 1), `N = ${fmtInt(m.d1)} marchés`,
+      "Agrégat non additif : recalculé sur les lignes à chaque filtre. Seuil : 100 marchés.", m.d1 >= 100),
+    card("Axe B · PME", "3 · Part de PME parmi les renseignés",
+      m.d3 ? fmtPct(m.n3 / m.d3) : "", `${fmtInt(m.n3)} / ${fmtInt(m.d3)} renseignés · taux de renseignement ${m.w3 ? fmtPct(m.d3 / m.w3) : "—"} (${fmtInt(m.d3)} / ${fmtInt(m.w3)})`,
+      "Fenêtre 2016-2017 verrouillée" + (yearIgnored ? " : le filtre Année est ignoré ici." : ".") + " Seuil : 100 marchés renseignés.", m.d3 >= 100),
+    card("Axe C · Budget", "5 · Montant total pondéré",
+      fmtNum(m.sumW / 1e9, 1) + " Md€", `N = ${fmtInt(m.nv)} attributions · Σ montant × POIDS`,
+      "Agrégat additif. Seuil : 30 attributions. Queue de distribution à vérifier avant tout audit.", m.nv >= 30),
+    card("Axe C · Budget", "Médiane des montants par attribution",
+      m.medV === null ? "" : fmtInt(Math.round(m.medV)) + " €", `N = ${fmtInt(m.nv)} attributions`,
+      "Valeur de contrôle du guide. Non pondérée. Seuil : 30 attributions.", m.nv >= 30)
+  ].join("");
+
+  // Procédures rares : un tableau par procédure, jamais de total général.
+  const rc = R.cols, rows = select(R, f, false), by = {};
+  for (const i of rows) {
+    const k = R.dicts.proc[rc.proc[i]] || "non renseignée";
+    const b = by[k] || (by[k] = { n: 0, ou: 0, den: 0, offs: [] });
+    b.n++; const o = rc.offers[i];
+    if (o !== null && o >= 1) { b.den++; b.offs.push(o); if (o === 1) b.ou++; }
+  }
+  $("rares").innerHTML = Object.keys(by).sort().map(k => {
+    const b = by[k], ok = b.den >= 100;
+    return `<tr><td><span class="tag">${k}</span></td><td>${fmtInt(b.n)}</td><td>${ok ? fmtPct(b.ou / b.den) : "effectif insuffisant"}</td><td>${fmtInt(b.ou)} / ${fmtInt(b.den)}</td><td>${b.offs.length ? fmtNum(median(b.offs), 0) : "—"}</td></tr>`;
+  }).join("") || `<tr><td colspan="5">Aucune attribution pour cette sélection.</td></tr>`;
+
+  const act = [f.pays && "Pays = " + f.pays, f.annee && "Année = " + f.annee, f.contrat && "Contrat = " + { W: "Travaux", U: "Fournitures", S: "Services" }[f.contrat]].filter(Boolean);
+  $("perim").textContent = `Périmètre : fichier principal, ${fmtInt(m.lignes)} attributions${act.length ? " · " + act.join(" · ") : " · aucun filtre"}. Recalcul en ${Math.round(performance.now() - t0)} ms.`;
+}
+
+function journal() {
+  const jp = P.journal, jr = R.journal;
+  const L = [
+    ["Fichier principal brut", fmtInt(jp.lignes_brutes)],
+    ["Doublons stricts retirés en séance 3 (principal)", fmtInt(jp.doublons_stricts_s3)],
+    ["Fichier principal FINAL", fmtInt(jp.lignes_final)],
+    ["ID_AW 164662498 présent 3 fois : lignes retirées (une attribution = une ligne)", fmtInt(jp.id_triple_retire)],
+    ["Sentinelle 940 déjà mise à vide en séance 3", fmtInt(jp.sentinelle_940_deja_isolee)],
+    ["Valeur 999 mise à vide comme 940 (BG 2014, même acheteur)", fmtInt(jp.sentinelle_999_mise_a_vide)],
+    ["Lignes utilisées par l'application (principal)", fmtInt(jp.lignes_application)],
+    ["Procédures rares brut → FINAL (2 doublons stricts)", fmtInt(jr.lignes_brutes) + " → " + fmtInt(jr.lignes_final)],
+    ["Total des doublons stricts de la séance 3", "336 = 334 (principal) + 2 (rares)"]
+  ];
+  $("journal").innerHTML = L.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+}
+
+async function init() {
+  try {
+    const [p, r] = await Promise.all(["data/principal.json", "data/rares.json"].map(u => fetch(u).then(x => { if (!x.ok) throw new Error(u + " " + x.status); return x.json(); })));
+    P = p; R = r;
+    P.dicts.pays.forEach(c => $("f-pays").insertAdjacentHTML("beforeend", `<option>${c}</option>`));
+    for (let y = 2009; y <= 2017; y++) $("f-annee").insertAdjacentHTML("beforeend", `<option>${y}</option>`);
+    ["f-pays", "f-annee", "f-contrat"].forEach(id => $(id).addEventListener("change", render));
+    $("reset").addEventListener("click", () => { ["f-pays", "f-annee", "f-contrat"].forEach(id => $(id).value = ""); render(); });
+    $("status").textContent = `Données chargées : ${fmtInt(P.n)} attributions (principal) et ${fmtInt(R.n)} (procédures rares), deux sources distinctes.`;
+    journal(); render();
+  } catch (e) {
+    $("status").textContent = "Erreur de chargement des données : " + e.message;
+  }
+}
+init();
+</script>
+</body>
+</html>
