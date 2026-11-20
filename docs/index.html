@@ -163,23 +163,33 @@ footer{padding:24px 16px 32px}
   <!-- ===== Vue 4 ===== -->
   <section id="v4" class="view hidden">
     <h2>Vue 4 · Quel cas précis ?</h2>
-    <p class="status">Une ligne = une attribution du fichier principal. On vérifie un cas avant d'agir.</p>
-    <div class="panel">
+    <p class="status">Pour l'analyste et l'auditeur. Une ligne = une attribution. On vérifie un cas avant d'agir : retenir ou écarter un dossier.</p>
+    <div class="controls">
+      <span><span class="lbl">Fichier</span><span class="chips" id="x-file"></span></span>
+      <form id="x-search" style="display:flex;gap:6px;align-items:center"><label class="lbl" for="x-q">Rechercher un ID_AW ou un code CPV</label><input id="x-q" name="q" inputmode="numeric" placeholder="ex. 115005289" style="width:170px"><button type="submit">Chercher</button></form>
+      <button class="link" id="x-back" type="button">← Retour à l'écran précédent</button>
+    </div>
+    <div id="x-fiche" class="panel hidden"></div>
+    <div id="x-main" class="panel">
       <div id="x-sel" class="decision"></div>
-      <div class="controls"><span><span class="lbl">Trier par</span><span class="chips" id="x-sort"></span></span><button class="link" id="x-back" type="button">← Retour à l'écran précédent</button></div>
+      <div class="controls"><span><span class="lbl">Trier par</span><span class="chips" id="x-sort"></span></span><button class="link hidden" id="x-clear" type="button">Effacer la sélection</button></div>
       <p class="hint" id="x-stats"></p>
       <div class="scroll"><table><thead id="x-head"></thead><tbody id="x-body"></tbody></table></div>
       <div class="controls"><button id="x-prev" type="button">← Précédent</button><span class="hint" id="x-page"></span><button id="x-next" type="button">Suivant →</button></div>
+    </div>
+    <div id="x-rares" class="panel hidden">
+      <div class="decision">Procédures rares : fichier séparé, lu procédure par procédure, jamais additionné au fichier principal (erreur sanctionnée n° 11). Filtres pays, année et contrat appliqués.</div>
+      <div class="scroll"><table><thead><tr><th>Procédure</th><th class="num">Attributions</th><th class="num">Offre unique</th><th class="num">Numérateur / dénominateur</th><th class="num">Médiane des offres</th></tr></thead><tbody id="rares"></tbody></table></div>
+      <div class="controls"><span><span class="lbl">Procédure</span><span class="chips" id="xr-proc"></span></span></div>
+      <div class="scroll"><table><thead id="xr-head"></thead><tbody id="xr-body"></tbody></table></div>
+      <div class="controls"><button id="xr-prev" type="button">← Précédent</button><span class="hint" id="xr-page"></span><button id="xr-next" type="button">Suivant →</button></div>
     </div>
   </section>
 
   <!-- ===== Traçabilité ===== -->
   <section id="v9" class="view hidden">
     <h2>Mesures et traçabilité</h2>
-    <h3>Procédures rares · fichier séparé, jamais additionné au principal</h3>
-    <p class="status">Lu procédure par procédure (erreur sanctionnée n° 11 : empiler les deux fichiers). Filtres pays, année, contrat appliqués.</p>
-    <div class="panel scroll"><table><thead><tr><th>Procédure</th><th class="num">Attributions</th><th class="num">Offre unique</th><th class="num">Numérateur / dénominateur</th><th class="num">Médiane des offres</th></tr></thead><tbody id="rares"></tbody></table></div>
-    <h3>Des fichiers bruts à l'application</h3>
+    <p class="status">D'où viennent les lignes, ce qui a été retiré et pourquoi. Le détail des formules est dans la fiche de paramétrage (dépôt GitHub, dossier livrables).</p>
     <div class="panel scroll"><table><tbody id="journal"></tbody></table></div>
   </section>
 </main>
@@ -205,7 +215,7 @@ const NO_COMPET = new Set(["NOC", "AWP"]);
 
 // ---------- données ----------
 let P, R, M, DIV;
-const S = { rel: "R1", rStrat: null, rScope: "OPE", tab: "v1", axe: "A", aCross: "PS", aSeuil: 0.40, aCap: 20, aSort: ["rank", "jeu"], bCross: "P", cCross: "PS", cCap: 500, x: null, xSort: "z", xPage: 0, prev: [] };
+const S = { xFile: "P", xRow: null, xq: "", xrProc: "", xrPage: 0, rel: "R1", rStrat: null, rScope: "OPE", tab: "v1", axe: "A", aCross: "PS", aSeuil: 0.40, aCap: 20, aSort: ["rank", "jeu"], bCross: "P", cCross: "PS", cCap: 500, x: null, xSort: "z", xPage: 0, prev: [] };
 
 function median(arr) {
   if (!arr.length) return null;
@@ -246,7 +256,7 @@ function card(o) {
   return `<div class="card"><div class="axe">${o.axe} · ${o.type}</div><div class="t">${o.titre}</div>
     <div class="big${o.ok ? "" : " low"}">${o.ok ? o.valeur : (o.lowText || "effectif insuffisant")}</div>
     <div class="n">${o.effectif}</div><div style="margin-top:6px">${badge}</div>
-    <div class="rule">${o.regle}</div>${o.link ? `<div style="margin-top:6px"><button class="link" type="button" data-go="${o.link[0]}" data-axe="${o.link[1] || ""}">${o.link[2]}</button></div>` : ""}</div>`;
+    <div class="rule">${o.regle}</div>${o.link ? `<div style="margin-top:6px"><button class="link" type="button" data-go="${o.link[0]}" data-axe="${o.link[1] || ""}">${o.link[2]}</button></div>` : ""}${o.link2 ? `<div style="margin-top:4px"><button class="link" type="button" data-drill="${o.link2[0]}">${o.link2[1]}</button></div>` : ""}</div>`;
 }
 function kpi4Card(f) {
   const K = M.kpi4, base = { axe: "Axe B · PME", type: "indicateur avancé (levier)", titre: "4 · Écart ajusté du 6-10 lots sur la part de PME", link: ["v2", "R3", "Pourquoi ? relation R3 →"],
@@ -295,7 +305,7 @@ function renderV1(f) {
   $("v1-perim").innerHTML = `Périmètre : fichier principal (${fmtInt(rows.length)} attributions). KPI 1 et 2 : procédure ouverte. <b>KPI 3 et 4 : fenêtre 2016-2017 verrouillée</b> (la variable PME n'existe pas avant 2016)${f.annee ? ", le filtre Année ne s'y applique pas" : ""}. Les procédures rares sont lues à part (onglet Mesures).`;
   $("kpis").innerHTML = [
     card({ axe: "Axe A · Concurrence", type: "indicateur de résultat", titre: "1 · Taux d'offre unique, procédure ouverte", ok: d1 >= 100, valeur: fmtPct(t1), effectif: `${fmtInt(n1)} / ${fmtInt(d1)} marchés avec au moins une offre`,
-      alert: d1 >= 100 && t1 > 0.40 ? "au-dessus de 40 %" : null, calm: d1 >= 100 && t1 <= 0.40 ? "sous le seuil de 40 %" : null, regle: "Seuil d'affichage : 100 marchés. Sentinelles 940 et 999 exclues. NOC exclue par précaution (code non confirmé).", link: ["v3", "A", "Où agir ? segments par montant en jeu →"] }),
+      alert: d1 >= 100 && t1 > 0.40 ? "au-dessus de 40 %" : null, calm: d1 >= 100 && t1 <= 0.40 ? "sous le seuil de 40 %" : null, regle: "Seuil d'affichage : 100 marchés. Sentinelles 940 et 999 exclues. NOC exclue par précaution (code non confirmé).", link: ["v3", "A", "Où agir ? segments par montant en jeu →"], link2: ["ou", "Voir les marchés à offre unique (vue 4) →"] }),
     card({ axe: "Axe A · Concurrence", type: "agrégat non additif", titre: "2 · Médiane du nombre d'offres, procédure ouverte", ok: d1 >= 100, valeur: med === null ? "" : fmtNum(med, Number.isInteger(med) ? 0 : 1) + " offres", effectif: `N = ${fmtInt(d1)} marchés`,
       alert: d1 >= 100 && med <= 2 ? "médiane ≤ 2 : surveillance" : null, calm: d1 >= 100 && med > 2 ? "au-dessus de 2 offres" : null, regle: "Associée à l'offre unique, sans la précéder : indicateur de surveillance, pas avancé. Recalculée sur les lignes.", link: ["v3", "A", "Liste de surveillance →"] }),
     card({ axe: "Axe B · PME", type: "indicateur de résultat", titre: "3 · Part de PME parmi les attributions renseignées", ok: d3 >= 100, valeur: fmtPct(t3), effectif: `${fmtInt(n3)} / ${fmtInt(d3)} renseignés · renseignement ${w3 ? fmtPct(d3 / w3, 0) : "—"} (${fmtInt(d3)} / ${fmtInt(w3)})`,
@@ -304,8 +314,12 @@ function renderV1(f) {
     card({ axe: "Axe C · Budget", type: "agrégat additif", titre: "5 · Montant total pondéré", ok: vals.length >= 30, valeur: fmtNum(sumW / 1e9, 1) + " Md€", effectif: `N = ${fmtInt(vals.length)} attributions · Σ montant × POIDS · médiane ${vals.length ? fmtEur(median(vals)) : "—"} par attribution`,
       alert: sumW && wTop / sumW > 0.5 ? `${fmtPct(wTop / sumW, 0)} porté par 1 % des montants` : null, calm: sumW && wTop / sumW <= 0.5 ? `${fmtPct(wTop / sumW, 0)} porté par 1 % des montants` : null, regle: "Seuil : 30 attributions. L'échantillon reproduit mal la queue (poids ≈ 15) : vérifier le dernier centile avant tout audit.", link: ["v3", "C", "Qui pèse ? test du dernier centile →"] }),
     card({ axe: "Axe C · Budget", type: "indicateur de ciblage", titre: "6 · Part du montant portée par les attributions atypiques (z > 3)", ok: nz >= 30, valeur: sumW ? fmtPct(wz3 / sumW) : "—", effectif: `${fmtInt(z3)} attributions atypiques sur ${fmtInt(nz)} scorées · ${fmtEur(wz3)} / ${fmtEur(sumW)}`,
-      calm: "atypique ne veut pas dire irrégulier", regle: "Indice : écart du montant à celui prédit par secteur × contrat, pays, année, lots, procédure. Seuil : 30 attributions.", link: ["v3", "C", "Où concentrer l'audit ? →"] })
+      calm: "atypique ne veut pas dire irrégulier", regle: "Indice : écart du montant à celui prédit par secteur × contrat, pays, année, lots, procédure. Seuil : 30 attributions.", link: ["v3", "C", "Où concentrer l'audit ? →"], link2: ["z3", "Voir les attributions atypiques (vue 4) →"] })
   ].join("");
+  const ope1 = codeOf(P, "proc", "OPE");
+  $("kpis").querySelectorAll("button[data-drill]").forEach(b => b.onclick = () => drill(b.dataset.drill === "z3"
+    ? { seg: {}, label: "Vue 1 · attributions atypiques (z > 3)", pred: i => P.cols.z[i] > 3, sort: "z" }
+    : { seg: {}, label: "Vue 1 · marchés à offre unique, procédure ouverte", pred: i => P.cols.proc[i] === ope1 && P.cols.offers[i] === 1, sort: "value" }));
   $("kpis").querySelectorAll("button[data-go]").forEach(b => b.onclick = () => { if (b.dataset.axe) { if (b.dataset.go === "v2") { S.rel = b.dataset.axe; S.rStrat = null; } else S.axe = b.dataset.axe; } S.prev.push(S.tab); go(b.dataset.go); });
 }
 
@@ -559,41 +573,83 @@ function renderC(f) {
 }
 
 // ---------- Vue 4 · exploration ----------
-function drill(sel) { S.prev.push(S.tab); S.x = sel; S.xSort = sel.sort || "value"; S.xPage = 0; go("v4"); }
+function drill(sel) { S.prev.push(S.tab); S.x = sel; S.xSort = sel.sort || "value"; S.xPage = 0; S.xFile = "P"; S.xRow = null; go("v4"); }
+const fmtRatio = r => fmtNum(r, r >= 100 ? 0 : 1);
+const yn = (d, v) => v < 0 ? "non renseigné" : d.dicts.pme[v] === "Y" ? "Oui" : "Non";
+const ynd = (d, dim, v) => v < 0 ? "non renseigné" : ({ Y: "Oui", N: "Non" }[d.dicts[dim][v]] || d.dicts[dim][v]);
+function fiche(i) {
+  const c = P.cols, w = (c.value[i] ?? 0) * c.poids[i];
+  // Strate de comparaison : même pays, même division CPV, même type de contrat (recalculée sur les lignes).
+  const peers = []; for (let j = 0; j < P.n; j++) if (c.pays[j] === c.pays[i] && DIV[j] === DIV[i] && c.contrat[j] === c.contrat[i] && c.value[j] !== null) peers.push(c.value[j]);
+  const med = median(peers), rank = peers.filter(v => v < c.value[i]).length / Math.max(1, peers.length);
+  const z = c.z[i], crit = P.dicts.crit[c.crit[i]], ach = P.dicts.acheteur[c.acheteur[i]];
+  const verdict = z === null ? "" : z > 3 ? `<span class="tag act">Atypique (z > 3)</span> à vérifier : gros lot légitime, regroupement, ou erreur de saisie ?` : z > 2 ? `<span class="tag watch">Élevé (z entre 2 et 3)</span>` : `<span class="tag info">Dans la norme de ses caractéristiques</span>`;
+  const L = [["ID_AW", c.id[i]], ["Année", c.year[i]], ["Pays", PAYS[P.dicts.pays[c.pays[i]]] || P.dicts.pays[c.pays[i]]], ["CPV", (c.cpv[i] || "—") + (DIV[i] >= 0 ? " · " + lab.S(i) : "")],
+    ["Type de contrat", lab.C(i)], ["Procédure", lab.R(i)], ["Type d'acheteur (code)", ach ?? "non renseigné"], ["Nombre d'offres", c.offers[i] ?? "non renseigné (ou sentinelle 940 / 999)"],
+    ["Nombre de lots", c.lots[i] === null ? "inconnu" : c.lots[i] === 0 ? "0 (non alloti)" : c.lots[i]], ["Attributions du même avis", c.awards[i]], ["Attributaire PME", yn(P, c.pme[i]) + (c.year[i] < 2016 ? " (variable absente avant 2016)" : "")],
+    ["Enchère électronique", ynd(P, "enchere", c.enchere[i])], ["Critère", crit === "L" ? "prix seul (L)" : crit === "M" ? "multicritère (M)" : "non renseigné"]];
+  $("x-fiche").innerHTML = `<div class="axe">Fiche de l'attribution</div><h3 style="margin:2px 0 8px">ID_AW ${c.id[i]} · ${esc(lab.P(i))} · ${c.year[i]}</h3>
+    <div class="kpis">
+      <div class="kpi"><b>${c.value[i] === null ? "—" : fmtEur(c.value[i])}</b><span>montant attribué · pondéré ${fmtEur(w)} (POIDS ${fmtNum(c.poids[i], 2)})</span></div>
+      <div class="kpi"><b>${c.pred[i] === null ? "—" : fmtEur(c.pred[i])}</b><span>montant attendu au regard de ses caractéristiques (modèle d'anomalie)</span></div>
+      <div class="kpi"><b>${z === null ? "—" : fmtNum(z, 2)}</b><span>indice d'anomalie z ${c.pred[i] ? `· montant ${c.value[i] >= c.pred[i] ? "× " + fmtRatio(c.value[i] / c.pred[i]) : "÷ " + fmtRatio(c.pred[i] / c.value[i])} par rapport à l'attendu` : ""}</span></div>
+      <div class="kpi"><b>${med === null ? "—" : fmtEur(med)}</b><span>montant médian de sa strate (même pays × secteur × contrat, N = ${fmtInt(peers.length)}) · plus élevé que ${fmtPct(rank, 0)} de la strate</span></div>
+    </div>
+    <p>${verdict}</p>
+    <div class="scroll"><table><tbody>${L.map(r => `<tr><th style="width:240px">${r[0]}</th><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
+    <div class="controls"><button type="button" id="x-close">Fermer la fiche</button><span class="hint">Décision : retenir le dossier pour l'audit, ou l'écarter en notant la raison (gros lot légitime, erreur de saisie).</span></div>`;
+  $("x-fiche").classList.remove("hidden"); $("x-close").onclick = () => { S.xRow = null; render(); };
+}
 function renderX(f) {
+  chipRow("x-file", [["P", "Fichier principal"], ["R", "Procédures rares"]], S.xFile, v => { S.xFile = v; S.xRow = null; });
+  $("x-main").classList.toggle("hidden", S.xFile !== "P"); $("x-rares").classList.toggle("hidden", S.xFile !== "R");
+  $("x-back").classList.toggle("hidden", !S.prev.length);
+  if (S.xFile === "R") { $("x-fiche").classList.add("hidden"); return renderRares(f); }
   const c = P.cols, sel = S.x || { seg: {}, label: "toutes les attributions des filtres de contexte" };
-  const ope = codeOf(P, "proc", "OPE");
+  const ope = codeOf(P, "proc", "OPE"), q = S.xq;
   let rows = select(P, f, !!sel.years, DIV).filter(i => {
     for (const d in sel.seg) if (keyOf[d](i) !== sel.seg[d]) return false;
     if (sel.years && !sel.years.includes(c.year[i])) return false;
     if (sel.onlyOpe && (c.proc[i] !== ope || c.offers[i] === null || c.offers[i] < 1)) return false;
     if (sel.ids && !sel.ids.has(i)) return false;
     if (sel.pred && !sel.pred(i)) return false;
+    if (q && !(String(c.id[i]) === q || (c.cpv[i] || "").startsWith(q))) return false;
     return true;
   });
-  const key = { z: i => c.z[i] ?? -Infinity, value: i => c.value[i] ?? -Infinity, offers: i => -(c.offers[i] ?? Infinity) }[S.xSort];
+  const key = { z: i => c.z[i] ?? -Infinity, value: i => c.value[i] ?? -Infinity, offers: i => -(c.offers[i] ?? Infinity), year: i => c.year[i] }[S.xSort];
   rows.sort((a, b) => key(b) - key(a));
   const per = 25, pages = Math.max(1, Math.ceil(rows.length / per)); S.xPage = Math.min(S.xPage, pages - 1);
-  $("x-sel").innerHTML = `Sélection : <b>${esc(sel.label)}</b> · ${fmtInt(rows.length)} attributions`;
-  const ou = rows.filter(i => c.offers[i] === 1).length, wo = rows.filter(i => c.offers[i] !== null && c.offers[i] >= 1).length;
-  $("x-stats").textContent = `Offre unique : ${fmtInt(ou)} / ${fmtInt(wo)} attributions avec au moins une offre · montant pondéré ${fmtEur(rows.reduce((t, i) => t + (c.value[i] ?? 0) * c.poids[i], 0))}.`;
-  chipRow("x-sort", [["z", "Indice d'anomalie"], ["value", "Montant"], ["offers", "Moins d'offres"]], S.xSort, v => { S.xSort = v; S.xPage = 0; });
-  $("x-head").innerHTML = "<tr><th>ID_AW</th><th>Année</th><th>Pays</th><th>Secteur</th><th>Procédure</th><th>Contrat</th><th class='num'>Offres</th><th class='num'>Lots</th><th>PME</th><th class='num'>Montant</th><th class='num'>z</th></tr>";
-  const yn = v => v < 0 ? "non renseigné" : P.dicts.pme[v] === "Y" ? "Oui" : "Non";
-  $("x-body").innerHTML = rows.slice(S.xPage * per, S.xPage * per + per).map(i => `<tr><td>${c.id[i]}</td><td>${c.year[i]}</td><td>${esc(P.dicts.pays[c.pays[i]] || "")}</td><td title="CPV ${c.cpv[i] || ""}">${c.cpv[i] ? c.cpv[i] : "—"}</td><td>${esc(P.dicts.proc[c.proc[i]] || "—")}</td><td>${esc(CONTRAT[P.dicts.contrat[c.contrat[i]]] || "")}</td><td class="num">${c.offers[i] ?? "—"}</td><td class="num">${c.lots[i] ?? "—"}</td><td>${yn(c.pme[i])}</td><td class="num">${c.value[i] === null ? "—" : fmtEur(c.value[i])}</td><td class="num">${c.z[i] === null ? "—" : fmtNum(c.z[i], 1)}</td></tr>`).join("") || `<tr><td colspan="11" class="hint">Aucune attribution pour cette sélection.</td></tr>`;
+  $("x-sel").innerHTML = `Sélection : <b>${esc(sel.label)}</b>${q ? ` · recherche « ${esc(q)} »` : ""} · ${fmtInt(rows.length)} attribution${rows.length > 1 ? "s" : ""}`;
+  $("x-clear").classList.toggle("hidden", !S.x && !q);
+  const ou = rows.filter(i => c.offers[i] === 1).length, wo = rows.filter(i => c.offers[i] !== null && c.offers[i] >= 1).length, z3 = rows.filter(i => c.z[i] > 3).length;
+  $("x-stats").textContent = `Offre unique : ${fmtInt(ou)} / ${fmtInt(wo)} attributions avec au moins une offre · atypiques (z > 3) : ${fmtInt(z3)} · montant pondéré ${fmtEur(rows.reduce((t, i) => t + (c.value[i] ?? 0) * c.poids[i], 0))}. Cliquer une ligne ouvre sa fiche.`;
+  chipRow("x-sort", [["z", "Indice d'anomalie"], ["value", "Montant"], ["offers", "Moins d'offres"], ["year", "Année"]], S.xSort, v => { S.xSort = v; S.xPage = 0; });
+  $("x-head").innerHTML = "<tr><th>ID_AW</th><th>Année</th><th>Pays</th><th>CPV</th><th>Procédure</th><th>Contrat</th><th class='num'>Offres</th><th class='num'>Lots</th><th>PME</th><th class='num'>Montant</th><th class='num'>Attendu</th><th class='num'>z</th></tr>";
+  const page = rows.slice(S.xPage * per, S.xPage * per + per);
+  $("x-body").innerHTML = page.map((i, j) => `<tr class="click" data-j="${j}"${S.xRow === i ? ' style="outline:2px solid var(--accent)"' : ""}><td>${c.id[i]}</td><td>${c.year[i]}</td><td>${esc(P.dicts.pays[c.pays[i]] || "")}</td><td>${c.cpv[i] || "—"}</td><td>${esc(P.dicts.proc[c.proc[i]] || "—")}</td><td>${esc(CONTRAT[P.dicts.contrat[c.contrat[i]]] || "")}</td><td class="num">${c.offers[i] ?? "—"}</td><td class="num">${c.lots[i] ?? "—"}</td><td>${yn(P, c.pme[i])}</td><td class="num">${c.value[i] === null ? "—" : fmtEur(c.value[i])}</td><td class="num">${c.pred[i] === null ? "—" : fmtEur(c.pred[i])}</td><td class="num">${c.z[i] === null ? "—" : fmtNum(c.z[i], 1)}</td></tr>`).join("") || `<tr><td colspan="12" class="hint">Aucune attribution pour cette sélection${q ? " et cette recherche" : ""}. Élargir les filtres ou effacer la sélection.</td></tr>`;
+  $("x-body").querySelectorAll("tr.click").forEach(tr => tr.onclick = () => { S.xRow = page[+tr.dataset.j]; render(); $("x-fiche").scrollIntoView({ behavior: "smooth", block: "start" }); });
   $("x-page").textContent = rows.length ? `${fmtInt(S.xPage * per + 1)}–${fmtInt(Math.min(rows.length, S.xPage * per + per))} sur ${fmtInt(rows.length)}` : "";
   $("x-prev").disabled = S.xPage === 0; $("x-next").disabled = S.xPage >= pages - 1;
+  if (S.xRow !== null && S.xRow !== undefined) fiche(S.xRow); else $("x-fiche").classList.add("hidden");
 }
 
-// ---------- rares et traçabilité ----------
+// ---------- procédures rares (vue 4, fichier séparé) ----------
 function renderRares(f) {
-  const rc = R.cols, by = {};
-  for (const i of select(R, f, false, null)) {
+  const rc = R.cols, by = {}, rows = select(R, f, false, null);
+  for (const i of rows) {
     const k = R.dicts.proc[rc.proc[i]] || "non renseignée";
     const b = by[k] || (by[k] = { n: 0, ou: 0, den: 0, offs: [] });
     b.n++; const o = rc.offers[i]; if (o !== null && o >= 1) { b.den++; b.offs.push(o); if (o === 1) b.ou++; }
   }
-  $("rares").innerHTML = Object.keys(by).sort().map(k => { const b = by[k]; return `<tr><td><span class="tag">${k}</span></td><td class="num">${fmtInt(b.n)}</td><td class="num">${b.den >= 100 ? fmtPct(b.ou / b.den) : "effectif insuffisant"}</td><td class="num">${fmtInt(b.ou)} / ${fmtInt(b.den)}</td><td class="num">${b.offs.length ? fmtNum(median(b.offs), 0) : "—"}</td></tr>`; }).join("") || `<tr><td colspan="5">Aucune attribution.</td></tr>`;
+  $("rares").innerHTML = Object.keys(by).sort().map(k => { const b = by[k]; return `<tr><td><span class="tag">${k}</span></td><td class="num">${fmtInt(b.n)}</td><td class="num">${b.den >= 100 ? fmtPct(b.ou / b.den) : "effectif insuffisant"}</td><td class="num">${fmtInt(b.ou)} / ${fmtInt(b.den)}</td><td class="num">${b.offs.length ? fmtNum(median(b.offs), 0) : "—"}</td></tr>`; }).join("") + `<tr><td colspan="5" class="hint">Pas de ligne « total » : additionner des procédures surreprésentées par construction fausserait tout taux.</td></tr>`;
+  chipRow("xr-proc", [["", "Toutes"]].concat(R.dicts.proc.map(p => [p, p])), S.xrProc, v => { S.xrProc = v; S.xrPage = 0; });
+  const pc = S.xrProc === "" ? null : R.dicts.proc.indexOf(S.xrProc);
+  const list = rows.filter(i => pc === null || rc.proc[i] === pc).sort((a, b) => (rc.value[b] ?? -1) - (rc.value[a] ?? -1));
+  const per = 25, pages = Math.max(1, Math.ceil(list.length / per)); S.xrPage = Math.min(S.xrPage, pages - 1);
+  $("xr-head").innerHTML = "<tr><th>ID_AW</th><th>Année</th><th>Pays</th><th>CPV</th><th>Procédure</th><th>Contrat</th><th class='num'>Offres</th><th class='num'>Lots</th><th>PME</th><th class='num'>Montant</th></tr>";
+  $("xr-body").innerHTML = list.slice(S.xrPage * per, S.xrPage * per + per).map(i => `<tr><td>${rc.id[i]}</td><td>${rc.year[i]}</td><td>${esc(R.dicts.pays[rc.pays[i]] || "")}</td><td>${rc.cpv[i] || "—"}</td><td>${esc(R.dicts.proc[rc.proc[i]] || "—")}</td><td>${esc(CONTRAT[R.dicts.contrat[rc.contrat[i]]] || "")}</td><td class="num">${rc.offers[i] ?? "—"}</td><td class="num">${rc.lots[i] ?? "—"}</td><td>${yn(R, rc.pme[i])}</td><td class="num">${rc.value[i] === null ? "—" : fmtEur(rc.value[i])}</td></tr>`).join("") || `<tr><td colspan="10" class="hint">Aucune attribution.</td></tr>`;
+  $("xr-page").textContent = list.length ? `${fmtInt(S.xrPage * per + 1)}–${fmtInt(Math.min(list.length, S.xrPage * per + per))} sur ${fmtInt(list.length)} (triées par montant)` : "";
+  $("xr-prev").disabled = S.xrPage === 0; $("xr-next").disabled = S.xrPage >= pages - 1;
 }
 function journal() {
   const jp = P.journal, jr = R.journal, a = jp.indice_anomalie;
@@ -625,7 +681,6 @@ function render() {
     if (S.axe === "C") { chipRow("c-cross", [["PS", "Pays × secteur"], ["PC", "Pays × contrat"], ["SR", "Secteur × procédure"]], S.cCross, v => S.cCross = v); chipRow("c-cap", [["100", "100"], ["500", "500"], ["1000", "1 000"], ["5", "5 % du périmètre"]], S.cCap, v => S.cCap = v); renderC(f); }
   }
   if (S.tab === "v4") renderX(f);
-  if (S.tab === "v9") renderRares(f);
   const act = [f.pays && "Pays = " + (PAYS[f.pays] || f.pays), f.annee && "Année = " + f.annee, f.contrat && "Contrat = " + CONTRAT[f.contrat], f.sect && "Secteur = " + f.sect.padStart(2, "0")].filter(Boolean);
   $("perim").textContent = `Périmètre : fichier principal, 2009-2017${act.length ? " · " + act.join(" · ") : " · aucun filtre"}. Recalcul en ${Math.round(performance.now() - t0)} ms.`;
 }
@@ -643,6 +698,9 @@ async function init() {
     $("a-cap").oninput = e => { S.aCap = +e.target.value; $("a-cap-v").textContent = S.aCap; render(); };
     $("x-prev").onclick = () => { S.xPage--; render(); }; $("x-next").onclick = () => { S.xPage++; render(); };
     $("x-back").onclick = () => go(S.prev.pop() || "v3");
+    $("x-search").onsubmit = e => { e.preventDefault(); S.xq = $("x-q").value.trim().replace(/^cpv/i, ""); S.xPage = 0; S.xRow = null; S.xFile = "P"; render(); };
+    $("x-clear").onclick = () => { S.x = null; S.xq = ""; $("x-q").value = ""; S.xPage = 0; S.xRow = null; render(); };
+    $("xr-prev").onclick = () => { S.xrPage--; render(); }; $("xr-next").onclick = () => { S.xrPage++; render(); };
     $("status").textContent = `Données chargées : ${fmtInt(P.n)} attributions (fichier principal) et ${fmtInt(R.n)} (procédures rares), deux sources distinctes jamais additionnées.`;
     const h = (location.hash || "").slice(1); if (TABS.some(t => t[0] === h)) S.tab = h;
     journal(); render();

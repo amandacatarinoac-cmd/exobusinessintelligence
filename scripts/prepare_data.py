@@ -90,6 +90,8 @@ def anomaly(p):
                   data=d[ok].astype({c: str for c in d.columns if c != "lv"})).fit()
     z = pd.Series(np.nan, index=p.index)
     z[ok] = robust_z(fit.resid.to_numpy())
+    pred = pd.Series(np.nan, index=p.index)
+    pred[ok] = np.power(10.0, fit.fittedvalues.to_numpy())  # montant attendu au regard des caractéristiques
     z = z.round(2)  # précision publiée : les comptes du journal utilisent la même valeur que l'application
     # Ancienne strate S4 (CPV × contrat), pour comparaison seulement.
     strat = d[ok].groupby(["cpvdiv", "contrat"])["lv"]
@@ -102,7 +104,7 @@ def anomaly(p):
         "z_sup3_ancien_cpv_contrat": int((z_old > 3).sum()),
         "part_montant_z_sup3_ancien": round(float(w[z_old > 3].sum() / w.sum()), 3),
     }
-    return z, comp
+    return z, pred, comp
 
 
 def kpi4(p, seuil=100):
@@ -164,6 +166,7 @@ def build(df, cats_cols, journal):
     cols["cpv"] = [None if pd.isna(c) else str(c).replace("CPV", "") for c in df["CPV"].tolist()]
     if "Z" in df.columns:
         cols["z"] = num(df["Z"], 2)
+        cols["pred"] = num(df["PRED"].round(0))
     for key, col in cats_cols.items():
         dicts[key], cols[key] = encode_cat(df[col])
     return {"n": len(df), "dicts": dicts, "cols": cols, "journal": journal}
@@ -190,8 +193,9 @@ def main(p_path, r_path, out_dir):
         "sentinelle_940_deja_isolee": int(p["NUMBER_OFFERS_SENTINELLE"].sum()),
         "lignes_application": len(p),
     }
-    z, comp = anomaly(p)
+    z, pred, comp = anomaly(p)
     p["Z"] = z
+    p["PRED"] = pred
     journal_p["indice_anomalie"] = comp
     k4 = kpi4(p)
     with open(f"{out_dir}/modeles.json", "w", encoding="utf-8") as fh:
