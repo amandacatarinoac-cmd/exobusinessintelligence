@@ -120,6 +120,7 @@ footer{padding:24px 16px 32px}
       <div class="controls">
         <span><span class="lbl">Croisement</span><span class="chips" id="a-cross"></span></span>
         <span><span class="lbl">Seuil d'alerte (offre unique)</span><span class="chips" id="a-seuil"></span></span>
+        <span><span class="lbl">Afficher</span><span class="chips" id="a-show"></span></span>
         <label><span class="lbl">Capacité d'instruction N</span><input type="range" id="a-cap" min="1" max="60" value="20" style="vertical-align:middle"> <b id="a-cap-v">20</b> dossiers</label>
       </div>
       <div class="kpis" id="a-kpis"></div>
@@ -215,7 +216,7 @@ const NO_COMPET = new Set(["NOC", "AWP"]);
 
 // ---------- données ----------
 let P, R, M, DIV;
-const S = { xFile: "P", xRow: null, xq: "", xrProc: "", xrPage: 0, rel: "R1", rStrat: null, rScope: "OPE", tab: "v1", axe: "A", aCross: "PS", aSeuil: 0.40, aCap: 20, aSort: ["rank", "jeu"], bCross: "P", cCross: "PS", cCap: 500, x: null, xSort: "z", xPage: 0, prev: [] };
+const S = { aShow: "all", xFile: "P", xRow: null, xq: "", xrProc: "", xrPage: 0, rel: "R1", rStrat: null, rScope: "OPE", tab: "v1", axe: "A", aCross: "PS", aSeuil: 0.40, aCap: 20, aSort: ["rank", "jeu"], bCross: "P", cCross: "PS", cCap: 500, x: null, xSort: "z", xPage: 0, prev: [] };
 
 function median(arr) {
   if (!arr.length) return null;
@@ -255,11 +256,11 @@ function card(o) {
   const badge = !o.ok ? "" : o.alert ? `<span class="tag act">${o.alert}</span>` : o.calm ? `<span class="tag info">${o.calm}</span>` : "";
   return `<div class="card"><div class="axe">${o.axe} · ${o.type}</div><div class="t">${o.titre}</div>
     <div class="big${o.ok ? "" : " low"}">${o.ok ? o.valeur : (o.lowText || "effectif insuffisant")}</div>
-    <div class="n">${o.effectif}</div><div style="margin-top:6px">${badge}</div>
+    <div class="n">${o.effectif}</div><div style="margin-top:6px">${badge}</div>${o.extra || ""}
     <div class="rule">${o.regle}</div>${o.link ? `<div style="margin-top:6px"><button class="link" type="button" data-go="${o.link[0]}" data-axe="${o.link[1] || ""}">${o.link[2]}</button></div>` : ""}${o.link2 ? `<div style="margin-top:4px"><button class="link" type="button" data-drill="${o.link2[0]}">${o.link2[1]}</button></div>` : ""}</div>`;
 }
-function kpi4Card(f) {
-  const K = M.kpi4, base = { axe: "Axe B · PME", type: "indicateur avancé (levier)", titre: "4 · Écart ajusté du 6-10 lots sur la part de PME", link: ["v2", "R3", "Pourquoi ? relation R3 →"],
+function kpi4Card(f, cost) {
+  const K = M.kpi4, base = { extra: cost, axe: "Axe B · PME", type: "indicateur avancé (levier)", titre: "4 · Écart ajusté du 6-10 lots sur la part de PME", link: ["v2", "R3", "Pourquoi ? relation R3 →"],
     regle: `Estimé une fois par pays (2016-2017, PME renseignée, 6-10 lots contre non allotis ; logistique contrôlée par montant, contrat, année). Publié seulement si ≥ ${K.seuil_par_groupe} marchés dans chaque groupe. Association ajustée, hétérogène : pas un effet causal.` };
   const ptsTxt = e => `${e.ecart_pts > 0 ? "+" : ""}${fmtNum(e.ecart_pts, 1)} pts`;
   const ci = e => `[${fmtNum(e.ecart_lo, 1)} ; ${fmtNum(e.ecart_hi, 1)}]`;
@@ -298,6 +299,12 @@ function renderV1(f) {
   }
   let n3 = 0, d3 = 0, w3 = 0;
   for (const i of select(P, f, true, DIV)) { const y = c.year[i]; if (y !== 2016 && y !== 2017) continue; w3++; if (c.pme[i] >= 0) { d3++; if (c.pme[i] === yes) n3++; } }
+  // Prix à payer du 6-10 lots (R2) : offre unique, procédure ouverte, 6-10 lots contre non allotis, filtres appliqués.
+  let ca = 0, cn = 0, cc = 0, cm = 0;
+  for (const i of rows) { const o = c.offers[i], l = c.lots[i]; if (c.proc[i] !== ope || o === null || o < 1 || l === null) continue;
+    if (l >= 6 && l <= 10) { cn++; if (o === 1) ca++; } else if (l === 0) { cm++; if (o === 1) cc++; } }
+  const costHtml = cn >= 100 && cm >= 100 ? `<div class="n" style="margin-top:6px;border-left:3px solid var(--warn);padding-left:8px"><b>Prix à payer (R2)</b> : offre unique ${fmtPct(ca / cn)} en 6-10 lots (${fmtInt(ca)} / ${fmtInt(cn)}) contre ${fmtPct(cc / cm)} non allotis (${fmtInt(cc)} / ${fmtInt(cm)}), soit ${(ca / cn - cc / cm) >= 0 ? "+" : ""}${fmtNum((ca / cn - cc / cm) * 100, 1)} points. Procédure ouverte, filtres appliqués.</div>`
+    : `<div class="n" style="margin-top:6px">Prix à payer (R2) : effectif insuffisant (${fmtInt(cn)} et ${fmtInt(cm)} marchés, seuil 100).</div>`;
   // Queue : part du montant pondéré portée par le 1 % des plus gros montants du périmètre.
   const sorted = Float64Array.from(vals).sort(); const p99 = sorted.length ? sorted[Math.floor(0.99 * (sorted.length - 1))] : Infinity;
   let wTop = 0; for (const i of rows) { const v = c.value[i]; if (v !== null && v > p99) wTop += v * c.poids[i]; }
@@ -310,7 +317,7 @@ function renderV1(f) {
       alert: d1 >= 100 && med <= 2 ? "médiane ≤ 2 : surveillance" : null, calm: d1 >= 100 && med > 2 ? "au-dessus de 2 offres" : null, regle: "Associée à l'offre unique, sans la précéder : indicateur de surveillance, pas avancé. Recalculée sur les lignes.", link: ["v3", "A", "Liste de surveillance →"] }),
     card({ axe: "Axe B · PME", type: "indicateur de résultat", titre: "3 · Part de PME parmi les attributions renseignées", ok: d3 >= 100, valeur: fmtPct(t3), effectif: `${fmtInt(n3)} / ${fmtInt(d3)} renseignés · renseignement ${w3 ? fmtPct(d3 / w3, 0) : "—"} (${fmtInt(d3)} / ${fmtInt(w3)})`,
       alert: d3 >= 100 && t3 < 0.40 ? "sous 40 % : revue d'allotissement" : null, calm: d3 >= 100 && t3 >= 0.40 ? "au-dessus de 40 %" : null, regle: "Fenêtre 2016-2017. Seuil : 100 renseignés. Un renseignement faible fragilise la part.", link: ["v3", "B", "Où agir ? pays sous 40 % →"] }),
-    kpi4Card(f),
+    kpi4Card(f, costHtml),
     card({ axe: "Axe C · Budget", type: "agrégat additif", titre: "5 · Montant total pondéré", ok: vals.length >= 30, valeur: fmtNum(sumW / 1e9, 1) + " Md€", effectif: `N = ${fmtInt(vals.length)} attributions · Σ montant × POIDS · médiane ${vals.length ? fmtEur(median(vals)) : "—"} par attribution`,
       alert: sumW && wTop / sumW > 0.5 ? `${fmtPct(wTop / sumW, 0)} porté par 1 % des montants` : null, calm: sumW && wTop / sumW <= 0.5 ? `${fmtPct(wTop / sumW, 0)} porté par 1 % des montants` : null, regle: "Seuil : 30 attributions. L'échantillon reproduit mal la queue (poids ≈ 15) : vérifier le dernier centile avant tout audit.", link: ["v3", "C", "Qui pèse ? test du dernier centile →"] }),
     card({ axe: "Axe C · Budget", type: "indicateur de ciblage", titre: "6 · Part du montant portée par les attributions atypiques (z > 3)", ok: nz >= 30, valeur: sumW ? fmtPct(wz3 / sumW) : "—", effectif: `${fmtInt(z3)} attributions atypiques sur ${fmtInt(nz)} scorées · ${fmtEur(wz3)} / ${fmtEur(sumW)}`,
@@ -468,7 +475,7 @@ function renderA(f) {
     s.rank = s.status === "act" ? 4 : s.status === "alert" ? 3 : s.status === "watch" ? 2 : s.status === "" ? 1 : 0;
   });
   // Les segments sous le seuil et sans concurrence ne remontent jamais en tête.
-  const main = sortRows(rows.filter(s => s.ok && !s.nocomp), S.aSort);
+  const main = sortRows(rows.filter(s => s.ok && !s.nocomp && (S.aShow === "all" || s.status === S.aShow)), S.aSort);
   const tail = rows.filter(s => !s.ok || s.nocomp).sort((a, b) => (b.nocomp - a.nocomp) || b.den - a.den);
   const watch = rows.filter(s => s.status === "watch").length;
   $("a-kpis").innerHTML = [
@@ -485,10 +492,11 @@ function renderA(f) {
   const maxJeu = Math.max(1, ...main.map(s => s.jeu));
   const tag = s => ({ act: '<span class="tag act">Instruire</span>', alert: '<span class="tag watch">Alerte hors capacité</span>', watch: '<span class="tag info">Surveillance</span>', low: '<span class="tag">Effectif insuffisant</span>', nocomp: '<span class="tag">Sans concurrence publiée</span>' }[s.status] || "");
   const tr = (s, i) => `<tr class="click ${s.ok && !s.nocomp ? "" : "low"}" data-i="${i}"><td>${esc(s.label)}</td><td>${tag(s)}</td><td class="num">${fmtEur(s.jeu)}${s.ok && !s.nocomp ? `<div class="bar"><i style="width:${s.jeu / maxJeu * 100}%"></i></div>` : ""}</td><td class="num">${s.ok ? fmtPct(s.taux) : "—"}</td><td class="num">${fmtInt(s.num)} / ${fmtInt(s.den)}</td><td class="num">${s.ok ? fmtNum(s.med, Number.isInteger(s.med) ? 0 : 1) : "—"}</td></tr>`;
-  const shown = main.slice(0, 40), all = shown.concat(tail.slice(0, 15));
-  $("a-body").innerHTML = shown.map(tr).join("") + (tail.length ? `<tr><td colspan="6" class="hint">Segments hors classement : ${fmtInt(tail.filter(s => !s.ok).length)} sous le seuil de 100 marchés, ${fmtInt(tail.filter(s => s.nocomp && s.ok).length)} sans concurrence publiée. Les 15 plus gros :</td></tr>` + tail.slice(0, 15).map((s, j) => tr(s, shown.length + j)).join("") : "");
+  const lim = S.aShow === "all" ? 40 : Infinity, tl = S.aShow === "all" ? tail : [];
+  const shown = main.slice(0, lim), all = shown.concat(tl.slice(0, 15));
+  $("a-body").innerHTML = (shown.map(tr).join("") || `<tr><td colspan="6" class="hint">Aucun segment avec ce statut.</td></tr>`) + (tl.length ? `<tr><td colspan="6" class="hint">Segments hors classement : ${fmtInt(tail.filter(s => !s.ok).length)} sous le seuil de 100 marchés, ${fmtInt(tail.filter(s => s.nocomp && s.ok).length)} sans concurrence publiée. Les 15 plus gros :</td></tr>` + tail.slice(0, 15).map((s, j) => tr(s, shown.length + j)).join("") : "");
   $("a-body").querySelectorAll("tr.click").forEach(row => row.onclick = () => { const s = all[+row.dataset.i]; drill({ axe: "A", seg: s.filter, label: "Axe A · " + s.label, onlyOpe: !withProc }); });
-  $("a-foot").textContent = `${fmtInt(main.length)} segments classés (40 premiers affichés). Tri : ${S.aSort.map(k => ({ rank: "statut (instruire, alerte, surveillance)", jeu: "montant en jeu", taux: "taux", den: "effectif", med: "médiane" }[k])).join(" puis ")}. Seuils : 100 marchés par segment ; alerte au-dessus du seuil choisi.`;
+  $("a-foot").textContent = `${fmtInt(main.length)} segments ${S.aShow === "all" ? "classés (40 premiers affichés)" : "avec ce statut, tous affichés"}. Tri : ${S.aSort.map(k => ({ rank: "statut (instruire, alerte, surveillance)", jeu: "montant en jeu", taux: "taux", den: "effectif", med: "médiane" }[k])).join(" puis ")}. Seuils : 100 marchés par segment ; alerte au-dessus du seuil choisi.`;
 }
 
 // ---------- Vue 3 · Axe B ----------
@@ -676,7 +684,7 @@ function render() {
   if (S.tab === "v3") {
     chipRow("axe-chips", [["A", "A · Concurrence"], ["B", "B · PME"], ["C", "C · Budget"]], S.axe, v => S.axe = v);
     ["A", "B", "C"].forEach(a => $("ax-" + a).classList.toggle("hidden", a !== S.axe));
-    if (S.axe === "A") { chipRow("a-cross", [["PS", "Pays × secteur"], ["PR", "Pays × procédure"], ["SR", "Secteur × procédure"]], S.aCross, v => S.aCross = v); chipRow("a-seuil", [[0.30, "30 %"], [0.40, "40 %"], [0.50, "50 %"]], S.aSeuil, v => S.aSeuil = v); renderA(f); }
+    if (S.axe === "A") { chipRow("a-cross", [["PS", "Pays × secteur"], ["PR", "Pays × procédure"], ["SR", "Secteur × procédure"]], S.aCross, v => S.aCross = v); chipRow("a-seuil", [[0.30, "30 %"], [0.40, "40 %"], [0.50, "50 %"]], S.aSeuil, v => S.aSeuil = v); chipRow("a-show", [["all", "Tous"], ["act", "Instruire"], ["alert", "Alerte hors capacité"], ["watch", "Surveillance"]], S.aShow, v => S.aShow = v); renderA(f); }
     if (S.axe === "B") { chipRow("b-cross", [["P", "Pays"], ["PS", "Pays × secteur"], ["PC", "Pays × contrat"]], S.bCross, v => S.bCross = v); renderB(f); }
     if (S.axe === "C") { chipRow("c-cross", [["PS", "Pays × secteur"], ["PC", "Pays × contrat"], ["SR", "Secteur × procédure"]], S.cCross, v => S.cCross = v); chipRow("c-cap", [["100", "100"], ["500", "500"], ["1000", "1 000"], ["5", "5 % du périmètre"]], S.cCap, v => S.cCap = v); renderC(f); }
   }
