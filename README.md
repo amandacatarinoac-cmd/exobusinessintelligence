@@ -185,6 +185,8 @@ Grille de la séance 4 : modèle et règles transversales (5), architecture des 
 | `livrables/S5_fiche_parametrage_mesures.md` | Fiche de paramétrage : formule, numérateur, dénominateur, effectif, seuil, comportement sous le seuil, valeur de contrôle |
 | `livrables/S5_registre_des_ecarts.md` | Registre des écarts maquette → application (demi-page, détail en annexe) |
 | `livrables/S5_journal_de_bord.md` | Journal de bord des sessions de travail |
+| `livrables/S5_pitch.md` | Pitch de 90 secondes et réponses prêtes aux questions probables |
+| `livrables/S5_guide_stories_pas_a_pas.md` | Pas-à-pas des 8 stories à suivre chronomètre en main (moins de 10 minutes au total) |
 | `README.md` | Ce fichier |
 
 ## 8. Décisions clés
