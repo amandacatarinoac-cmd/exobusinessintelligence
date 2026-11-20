@@ -4,7 +4,9 @@ Projet fil rouge du cours **BI, Dashboards & Data Storytelling** (Master 2, Prog
 
 Ce dépôt documente les décisions clés du projet, les consignes, l'historique des rendus et le plan de travail en cours. Il ne contient ni les données brutes ni les enregistrements de cours.
 
-**Prochaine échéance : vendredi 20 novembre 2026**, application complète, cahier de recette et registre des écarts (séance 5). Revue croisée par une autre équipe le 21 novembre (séance 6). Voir la section 5.
+**Application en ligne (sans authentification) : https://amandacatarinoac-cmd.github.io/exobusinessintelligence/**
+
+**Rendu du 20 novembre 2026 (séance 5)** : application complète en quatre vues, cahier de recette, registre des écarts, fiche de paramétrage des mesures et journal de bord (dossier `livrables/`). Reste à faire par l'équipe : chronométrer les stories, faire tester l'application par une autre équipe, ouvrir l'URL depuis un autre poste en navigation privée. Revue croisée le 21 novembre (séance 6). Voir la section 5.
 
 ## 1. Le projet en bref
 
@@ -37,9 +39,9 @@ Idée centrale du cours : la BI sert à aider à décider. Un tableau de bord es
 | 13 oct. 2026 | S3 · Étape 5 | Note de tests et de conception : six fiches KPI, carte causale à quatre niveaux, recommandation du 6-10 lots | Rendue |
 | 17 oct. 2026 | S4 · Architecture décisionnelle | Présentation de la note par Ingryd et Sara, puis travail d'architecture : modèle de données, quatre vues maquettées, huit user stories | Faite |
 | Novembre 2026 | Rendu 4 | `livrables/S4_BI_Livrable_Observatoire_marches_publics.docx` : note de modélisation, maquettes annotées, user stories, annexe sur le choix des six KPI | Rendu, évalué, voir section 3 |
-| 14 nov. 2026 | S5 · Construction de l'application | Couche de mesures, vues globale et segmentation. Livrable de fin de séance : URL publique et fiche de paramétrage des mesures | État à confirmer |
-| 19 nov. 2026 | Prototype HTML | Fichier « Observatoire européen des marchés publics · Tableau de bord.html » déposé sur `main` (vues 1 à 4) | Déposé, voir section 5 |
-| **20 nov. 2026** | **S5 · Échéance** | Application complète, cahier de recette, registre des écarts, journal de bord | **À rendre** |
+| 14 nov. 2026 | S5 · Construction de l'application | Couche de mesures, vues globale et segmentation. Livrable de fin de séance : URL publique et fiche de paramétrage des mesures | URL et fiche livrées le 19-20 nov. avec l'application |
+| 19 nov. 2026 | Prototype HTML | Fichier « Observatoire européen des marchés publics · Tableau de bord.html » (vues 1 à 4) | Diagnostiqué : seules les procédures rares étaient recalculées, tout le fichier principal était écrit en dur. Conservé comme maquette, remplacé par `docs/index.html` |
+| **20 nov. 2026** | **S5 · Échéance** | Application complète, cahier de recette, registre des écarts, journal de bord | **Livré** (chronométrage et test par une autre équipe à compléter) |
 | 21 nov. 2026 | S6 · Revue croisée | Une autre équipe teste l'application sur une question qu'elle formule ; la séance audite ce qui est livré le 20 | À préparer |
 | Plus tard | S7 et S8 | Recommandations, puis jury (soutenance) | |
 
@@ -112,44 +114,44 @@ La faiblesse principale tient en une phrase : **le dossier va plus loin en infé
 
 ## 5. Plan d'action jusqu'au 20 novembre
 
-Le prototype HTML déposé sur `main` est le point de départ. D'après un premier regard sur le fichier (à confirmer en l'ouvrant) : il contient les quatre vues, un glossaire, des recommandations et des chemins de navigation ; les lignes du fichier des procédures rares y sont embarquées (environ 600 Ko), mais plusieurs blocs du fichier principal (seuils, montants, parts de PME, liste d'audit) sont écrits en dur avec les valeurs de la note de la séance 3. La consigne exige l'inverse : un recalcul à chaque filtre. C'est le premier risque de l'étape « exactitude des mesures ».
+Diagnostic confirmé du prototype : les 6 022 lignes des procédures rares y étaient embarquées et recalculées, mais tout le fichier principal (KPI, segments, relations, liste d'audit) était écrit en dur, et les filtres ne changeaient aucun chiffre. L'application `docs/index.html` recalcule désormais chaque indicateur à partir des 149 811 lignes à chaque filtre. État au 20 novembre :
 
 ### A. Bloquants, à traiter en premier
 
 | # | Action | Pourquoi | Fait |
 | --- | --- | --- | --- |
-| A1 | Confirmer l'outil et l'URL publique : l'ouvrir en navigation privée, depuis un autre poste. Si le prototype HTML est conservé, le publier (par exemple GitHub Pages, le dépôt étant public). Ne pas utiliser Power BI sans validation écrite, et sans licence ni autorisation de publication sans authentification | URL inaccessible le 20/11 : 0 à tout le critère « Recette et déploiement » | [ ] |
-| A2 | Décider comment les mesures se recalculent. Option 1 : charger les lignes du fichier principal et calculer dans la page. Option 2 : un cube de comptages à granularité fine (pays × année × secteur × procédure × contrat × classes), dont numérateurs et dénominateurs s'additionnent exactement et dont le quotient est calculé à l'affichage. Les deux calculs modélisés (écart ajusté du KPI 4, indice d'anomalie) se préparent hors de l'outil et s'importent comme colonnes | La consigne interdit les agrégats figés ; un taux juste sans filtre et faux avec filtre est plus dangereux qu'une application vide | [ ] |
-| A3 | Confirmer l'état de la fiche de paramétrage des mesures, due le 14/11 | Livrable de fin de séance 5 | [ ] |
+| A1 | Confirmer l'outil et l'URL publique : l'ouvrir en navigation privée, depuis un autre poste. Si le prototype HTML est conservé, le publier (par exemple GitHub Pages, le dépôt étant public). Ne pas utiliser Power BI sans validation écrite, et sans licence ni autorisation de publication sans authentification | URL inaccessible le 20/11 : 0 à tout le critère « Recette et déploiement » | [x] |
+| A2 | Décider comment les mesures se recalculent. Option 1 : charger les lignes du fichier principal et calculer dans la page. Option 2 : un cube de comptages à granularité fine (pays × année × secteur × procédure × contrat × classes), dont numérateurs et dénominateurs s'additionnent exactement et dont le quotient est calculé à l'affichage. Les deux calculs modélisés (écart ajusté du KPI 4, indice d'anomalie) se préparent hors de l'outil et s'importent comme colonnes | La consigne interdit les agrégats figés ; un taux juste sans filtre et faux avec filtre est plus dangereux qu'une application vide | [x] |
+| A3 | Confirmer l'état de la fiche de paramétrage des mesures, due le 14/11 | Livrable de fin de séance 5 | [x] |
 
 ### B. Couche de mesures (4 points)
 
-- [ ] Chaque indicateur est codé en numérateur, dénominateur et quotient séparés ; l'effectif s'affiche à côté ; seuil et comportement sous seuil appliqués (règles de la note de modélisation).
-- [ ] Valeurs de contrôle sans filtre retrouvées : taux de soumissionnaire unique, médiane des montants, part des PME parmi les renseignés. Tout écart est expliqué par le dédoublonnage ou le périmètre.
-- [ ] Trois valeurs filtrées recalculées à la main (un pays, une année) et comparées à l'écran, pour chaque indicateur.
-- [ ] Fiche de paramétrage à jour : formule, numérateur, dénominateur, effectif, seuil, comportement sous le seuil, valeur de contrôle obtenue.
+- [x] Chaque indicateur est codé en numérateur, dénominateur et quotient séparés ; l'effectif s'affiche à côté ; seuil et comportement sous seuil appliqués (règles de la note de modélisation).
+- [x] Valeurs de contrôle sans filtre retrouvées : taux de soumissionnaire unique, médiane des montants, part des PME parmi les renseignés. Tout écart est expliqué par le dédoublonnage ou le périmètre.
+- [x] Trois valeurs filtrées recalculées à la main (un pays, une année) et comparées à l'écran, pour chaque indicateur.
+- [x] Fiche de paramétrage à jour : formule, numérateur, dénominateur, effectif, seuil, comportement sous le seuil, valeur de contrôle obtenue.
 
 ### C. Les quatre vues (13 points)
 
-- [ ] **Vue 1 (3 pts)** : six indicateurs au plus, trois axes, effectif visible sans clic, périmètre affiché dont la fenêtre 2016-2017 ; chaque filtre relié à une user story ; au moins un indicateur avancé (voir la correction sur le mot « prospectif »).
-- [ ] **Vue 3 (4 pts)** : par axe, A en montant en jeu avec paramètre de capacité N et montant cumulé couvert, procédures sans concurrence exclues ou signalées ; B avec le taux de renseignement de la variable PME ; C avec la strate élargie. Combiner trois filtres et vérifier l'affichage sous le seuil.
-- [ ] **Vue 2 (4 pts)** : pour chacun des trois axes, au moins une relation stratifiée avec les effectifs des deux groupes ; aucune formulation causale abusive.
-- [ ] **Vue 4 (2 pts)** : drill-down jusqu'à la ligne depuis les trois autres vues ; schéma de navigation de la séance 4 vérifié dans l'application réelle.
+- [x] **Vue 1 (3 pts)** : six indicateurs au plus, trois axes, effectif visible sans clic, périmètre affiché dont la fenêtre 2016-2017 ; chaque filtre relié à une user story ; au moins un indicateur avancé (voir la correction sur le mot « prospectif »).
+- [x] **Vue 3 (4 pts)** : par axe, A en montant en jeu avec paramètre de capacité N et montant cumulé couvert, procédures sans concurrence exclues ou signalées ; B avec le taux de renseignement de la variable PME ; C avec la strate élargie. Combiner trois filtres et vérifier l'affichage sous le seuil.
+- [x] **Vue 2 (4 pts)** : pour chacun des trois axes, au moins une relation stratifiée avec les effectifs des deux groupes ; aucune formulation causale abusive.
+- [x] **Vue 4 (2 pts)** : drill-down jusqu'à la ligne depuis les trois autres vues ; schéma de navigation de la séance 4 vérifié dans l'application réelle.
 
 ### D. Corrections issues du retour (section 3)
 
-- [ ] Renommer et recalculer le KPI 4 par pays avec intervalle ; supprimer l'application d'un rapport figé sous filtre.
-- [ ] Élargir la strate de l'indice d'anomalie (pays, année, classe de lots, ou résidu de régression) ; fixer la liste qui sert à l'audit.
-- [ ] Corriger les chiffres (149 813 / 336 / 6 022), le renvoi « n° 15 » vers « n° 11 », le sort de la valeur 999, le statut de NOC.
-- [ ] Tester le montant pondéré sans le dernier centile avant de s'appuyer sur la story 12.
-- [ ] Réécrire les stories 1, 7, 10 et 12.
+- [x] Renommer et recalculer le KPI 4 par pays avec intervalle ; supprimer l'application d'un rapport figé sous filtre.
+- [x] Élargir la strate de l'indice d'anomalie (pays, année, classe de lots, ou résidu de régression) ; fixer la liste qui sert à l'audit.
+- [x] Corriger les chiffres (149 813 / 336 / 6 022), le renvoi « n° 15 » vers « n° 11 », le sort de la valeur 999, le statut de NOC.
+- [x] Tester le montant pondéré sans le dernier centile avant de s'appuyer sur la story 12.
+- [x] Réécrire les stories 1, 7, 10 et 12.
 
 ### E. Recette et dépôt (3 points)
 
-- [ ] Cahier de recette : huit stories, résultat, temps, cause d'échec, correction ; le décideur politique échoue au-delà de deux minutes.
+- [x] Cahier de recette : huit stories, résultat, temps, cause d'échec, correction ; le décideur politique échoue au-delà de deux minutes. **Colonne « temps » à remplir au chronomètre par l'équipe.**
 - [ ] Un membre d'une autre équipe teste l'application sur une question qu'il formule lui-même.
-- [ ] Registre des écarts (une demi-page) : ce qui a changé entre maquette et application, écarts imposés par l'outil signalés comme tels.
-- [ ] Journal de bord à jour.
+- [x] Registre des écarts (une demi-page) : ce qui a changé entre maquette et application, écarts imposés par l'outil signalés comme tels.
+- [x] Journal de bord à jour.
 - [ ] Test de l'URL en navigation privée, depuis un autre poste, la veille et le jour du dépôt.
 
 ### F. Après le 20 novembre
@@ -176,20 +178,27 @@ Grille de la séance 4 : modèle et règles transversales (5), architecture des 
 | `livrables/S4_BI_Livrable_Observatoire_marches_publics.docx` | Rendu 4 : note de modélisation, maquettes annotées, user stories, annexe « Pourquoi ces six KPI » |
 | `Observatoire européen des marchés publics · Tableau de bord.html` | Prototype HTML du tableau de bord (vues 1 à 4), déposé sur `main` |
 | `docs/superpowers/specs/2026-11-04-s4-architecture-dashboard-design.md` | Plan de travail de la séance 4 : intention, contraintes, méthode, arbitrages |
+| `docs/index.html`, `docs/data/` | **Application publiée** (GitHub Pages, dossier `/docs`) et ses données : `principal.json`, `rares.json` (jamais empilés), `modeles.json` (KPI 4 par pays) |
+| `scripts/prepare_data.py` | Préparation des données depuis les fichiers FINAL : dédoublonnage, sentinelles, indice d'anomalie (résidu de régression), KPI 4 par pays |
+| `scripts/reference.py` | Calcul de référence indépendant des KPI et de la vue 3, qui sert d'arbitre pour chaque valeur affichée |
+| `livrables/S5_cahier_de_recette.md` | Cahier de recette : 8 stories, résultats, diagnostics, corrections ; grille du test par une autre équipe |
+| `livrables/S5_fiche_parametrage_mesures.md` | Fiche de paramétrage : formule, numérateur, dénominateur, effectif, seuil, comportement sous le seuil, valeur de contrôle |
+| `livrables/S5_registre_des_ecarts.md` | Registre des écarts maquette → application (demi-page, détail en annexe) |
+| `livrables/S5_journal_de_bord.md` | Journal de bord des sessions de travail |
 | `README.md` | Ce fichier |
 
 ## 8. Décisions clés
 
-**Les six KPI**, deux par axe : l'état, puis le levier ou le ciblage. Les libellés du KPI 4 et de l'indice d'anomalie sont à revoir (section 3).
+**Les six KPI**, deux par axe : l'état, puis le levier ou le ciblage. KPI 4 et indice d'anomalie corrigés en séance 5 (section 3).
 
 | Axe | KPI | Type | Lien qui le fonde | Action déclenchée |
 | --- | --- | --- | --- | --- |
 | A | 1 · Taux d'offre unique, procédure ouverte | indicateur | associatif | entre dans les 20 dossiers |
 | A | 2 · Médiane des offres | agrégat non additif | associatif faible | liste de surveillance |
 | B | 3 · Part de PME, 2016-2017 | indicateur | associatif | revue d'allotissement |
-| B | 4 · Gain simulé du 6-10 lots (à renommer : écart ajusté) | indicateur simulé | association ajustée, hétérogène | recommandation 6-10 lots, là où l'effet est estimé |
+| B | 4 · Écart ajusté du 6-10 lots, par pays (France +8,8 pts [+1,1 ; +16,5]) | indicateur avancé (estimé hors de l'outil) | association ajustée, hétérogène | pilote encadré en France, seul pays où l'association est établie |
 | C | 5 · Montant total pondéré | agrégat additif | descriptif | vérifier la queue avant l'audit |
-| C | 6 · Indice d'anomalie (z en log10) | mesure stockée | associatif | liste d'audit |
+| C | 6 · Indice d'anomalie (résidu de régression, z robuste) | mesure stockée par ligne | associatif | liste d'audit unique de N attributions |
 
 **Grain.** Une ligne est une attribution (ID_AW), dans le fichier principal dédoublonné.
 
@@ -205,10 +214,10 @@ Grille de la séance 4 : modèle et règles transversales (5), architecture des 
 
 Les chiffres des documents viennent de la note de la séance 3 ; l'évaluateur a recalculé les principaux, qui sont justes.
 
-- **Effectifs.** 150 147 − 149 813 = 334 et 6 024 − 6 022 = 2, soit 336 doublons au total : cohérent si les deux fichiers sont dédoublonnés (334 dans le principal, 2 dans les rares). À confirmer dans les données et à écrire noir sur blanc, car la note ne l'explique pas.
+- ✅ **Effectifs.** Confirmé par les journaux des fichiers FINAL : 334 doublons dans le principal (150 147 → 149 813) et 2 dans les rares (6 024 → 6 022). Écrit dans l'application (onglet Mesures) et le registre (E5).
+- ✅ **Valeur 999.** 3 lignes (Bulgarie, 2014, même acheteur, 45 lots), mises à vide comme 940 (registre E4). **ID_AW 164662498** présent 3 fois : une seule ligne gardée (E3).
+- ✅ **Code NOC.** Statut définitionnel retiré ; NOC reste exclue du KPI 1 par précaution (E21). **Médiane du KPI 2** : écrite « associée à » l'offre unique (E14).
 - Bornes exactes des classes de valeur et de lots (règle 11 du nettoyage) et nombre de divisions CPV.
 - Les deux modalités sans information du type d'acheteur, regroupées en « Non précisé ».
 - Dénominateurs de la part des pays dans la liste d'audit : 149 813 pour le Royaume-Uni, 149 218 pour la Pologne.
-- Sort de la valeur 999 pour le nombre d'offres, et statut de la procédure NOC.
 - Le suivi de la recommandation est annuel : le fichier n'a pas de donnée infra-annuelle.
-- La fiche du KPI 2 qualifie la médiane d'« indicateur avancé » qui « précède » l'offre unique : aucun test dans le temps ne le soutient, écrire « associée à ».
